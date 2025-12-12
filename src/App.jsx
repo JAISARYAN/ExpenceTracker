@@ -534,12 +534,12 @@ export default function App() {
                          </Card>
 
                         {/* Trend Chart Card */}
-                         <Card className="md:col-span-2 flex flex-col justify-between bg-gradient-to-br from-white to-indigo-50 border-indigo-100">
+                         <Card className="md:col-span-2 flex flex-col justify-between">
                             <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold text-slate-700 flex items-center gap-2"><TrendingUp size={18} className="text-indigo-600"/> Spending Trend</h3>
+                                <h3 className="font-bold text-white flex items-center gap-2"><TrendingUp size={18} className="text-indigo-300"/> Spending Trend</h3>
                             </div>
                             {timeFilter === 'all' ? (
-                                <div className="h-48 flex items-center justify-center text-slate-400 bg-slate-50 rounded-xl border border-dashed border-indigo-200">
+                                <div className="h-48 flex items-center justify-center text-white/60 bg-white/5 rounded-xl border border-dashed border-white/20">
                                     Select '7 Days' or '30 Days' to see daily trends
                                 </div>
                             ) : (
@@ -558,24 +558,24 @@ export default function App() {
                         {/* Recent Transactions */}
                         <Card className="lg:col-span-2">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-slate-700 flex items-center gap-2"><History size={18} className="text-indigo-500"/> Recent Activity</h3>
-                                <button onClick={() => setView('history')} className="text-indigo-600 text-sm font-medium hover:text-indigo-700">View All</button>
+                                <h3 className="font-bold text-white flex items-center gap-2"><History size={18} className="text-indigo-300"/> Recent Activity</h3>
+                                <button onClick={() => setView('history')} className="text-indigo-300 text-sm font-medium hover:text-indigo-200">View All</button>
                             </div>
                             <div className="space-y-4">
                                 {filteredExpenses.slice(0, 5).map(item => (
-                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-100">
+                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/20">
                                         <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center text-indigo-600 font-bold text-sm">
+                                            <div className="w-10 h-10 rounded-full bg-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold text-sm">
                                                 {item.category[0]}
                                             </div>
                                             <div>
-                                                <p className="font-semibold text-slate-800">{item.category}</p>
-                                                <p className="text-xs text-slate-400">{formatDate(item.date)}</p>
+                                                <p className="font-semibold text-white">{item.category}</p>
+                                                <p className="text-xs text-white/60">{formatDate(item.date)}</p>
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-slate-800">-${item.amount.toFixed(2)}</p>
-                                            <p className="text-xs text-slate-400 truncate max-w-[120px]">{item.description}</p>
+                                            <p className="font-bold text-white">-${item.amount.toFixed(2)}</p>
+                                            <p className="text-xs text-white/60 truncate max-w-[120px]">{item.description}</p>
                                         </div>
                                     </div>
                                 ))}
@@ -628,9 +628,9 @@ export default function App() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-white mb-1.5">Description</label>
+                                <label className="block text-sm font-medium text-white mb-1.5">Description <span className="text-white/50">(Optional)</span></label>
                                 <input 
-                                    type="text" required 
+                                    type="text"
                                     className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white placeholder-white/50"
                                     placeholder="Dinner at Joe's..."
                                     value={formData.description}
@@ -660,24 +660,24 @@ export default function App() {
                         <table className="w-full text-left">
                             <thead className="bg-slate-50 border-y border-slate-200">
                                 <tr>
-                                    <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Date</th>
-                                    <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
-                                    <th className="min-w-[200px] px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider">Description</th>
-                                    <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-right">Amount</th>
-                                    <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-slate-500 uppercase tracking-wider text-center">Action</th>
+                                    <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Date</th>
+                                    <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Category</th>
+                                    <th className="min-w-[200px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Description</th>
+                                    <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-right">Amount</th>
+                                    <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-center">Action</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-white/10">
                                 {filteredExpenses.map((expense) => (
-                                    <tr key={expense.id} className="hover:bg-slate-50 transition-colors group">
-                                        <td className="px-6 py-4 text-sm text-slate-600 whitespace-nowrap">{expense.date}</td>
+                                    <tr key={expense.id} className="hover:bg-white/5 transition-colors group">
+                                        <td className="px-6 py-4 text-sm text-white whitespace-nowrap">{expense.date}</td>
                                         <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/30 text-indigo-200">
                                                 {expense.category}
                                             </span>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-slate-700">{expense.description}</td>
-                                        <td className="px-6 py-4 text-sm font-bold text-slate-700 text-right">-${expense.amount.toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-sm text-white/80">{expense.description}</td>
+                                        <td className="px-6 py-4 text-sm font-bold text-white text-right">-${expense.amount.toFixed(2)}</td>
                                         <td className="px-6 py-4 text-center">
                                             <button 
                                                 onClick={() => handleDelete(expense.id)}
@@ -691,7 +691,7 @@ export default function App() {
                                 ))}
                                 {filteredExpenses.length === 0 && (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-10 text-center text-slate-400">
+                                        <td colSpan="5" className="px-6 py-10 text-center text-white/60">
                                             No transactions found for this period.
                                         </td>
                                     </tr>
