@@ -73,7 +73,7 @@ const getDaysArray = (days) => {
 // --- UI Components ---
 
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white rounded-2xl shadow-sm border border-slate-100 p-6 transition-all duration-300 hover:shadow-md ${className}`}>
+  <div className={`bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl hover:border-white/40 ${className}`}>
     {children}
   </div>
 );
@@ -82,9 +82,9 @@ const Button = ({ children, onClick, variant = "primary", className = "", disabl
   const baseStyle = "px-4 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm active:scale-95";
   const variants = {
     primary: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:to-indigo-700",
-    secondary: "bg-white text-slate-600 border border-slate-200 hover:bg-slate-50 hover:border-slate-300",
-    danger: "bg-red-50 text-red-600 hover:bg-red-100 border border-red-100",
-    ghost: "text-slate-500 hover:text-slate-800 hover:bg-slate-100"
+    secondary: "bg-white/20 text-white border border-white/30 backdrop-blur-sm hover:bg-white/30 hover:border-white/50",
+    danger: "bg-red-500/20 text-red-200 hover:bg-red-500/40 border border-red-500/40",
+    ghost: "text-white/70 hover:text-white hover:bg-white/10"
   };
   
   return (
@@ -447,7 +447,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex font-sans text-slate-800">
       
       {/* --- Sidebar (Desktop) --- */}
       <aside className="hidden md:flex flex-col w-64 bg-gradient-to-b from-indigo-600 via-purple-600 to-indigo-700 fixed h-full z-20 shadow-2xl">
@@ -496,17 +496,17 @@ export default function App() {
       {/* --- Main Content --- */}
       <main className="flex-1 md:ml-64 pb-24 md:pb-6">
         {/* Header (Mobile & Desktop) */}
-        <header className="sticky top-0 z-10 bg-gradient-to-r from-indigo-50 to-purple-50 backdrop-blur-md border-b border-indigo-100 px-6 py-4 flex justify-between items-center shadow-sm">
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent capitalize">{view === 'add' ? 'Add New Expense' : view === 'history' ? 'Transaction History' : 'Dashboard'}</h1>
+        <header className="sticky top-0 z-10 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex justify-between items-center shadow-lg">
+            <h1 className="text-2xl font-bold text-white capitalize">{view === 'add' ? 'Add New Expense' : view === 'history' ? 'Transaction History' : 'Dashboard'}</h1>
             
             {/* Time Filter Toggle */}
             {view !== 'add' && (
-                <div className="flex bg-slate-100 p-1 rounded-lg">
+                <div className="flex bg-white/10 backdrop-blur-sm p-1 rounded-lg border border-white/20">
                     {['7', '30', 'all'].map((t) => (
                         <button
                             key={t}
                             onClick={() => setTimeFilter(t)}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${timeFilter === t ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
+                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${timeFilter === t ? 'bg-indigo-600/80 text-white shadow-lg border border-indigo-400' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
                         >
                             {t === 'all' ? 'All Time' : `${t} Days`}
                         </button>
@@ -592,12 +592,12 @@ export default function App() {
                     <Card className="border-t-4 border-t-indigo-500">
                         <form onSubmit={handleAdd} className="space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Amount</label>
+                                <label className="block text-sm font-medium text-white mb-1.5">Amount</label>
                                 <div className="relative">
                                     <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
                                     <input 
                                         type="number" step="0.01" required 
-                                        className="w-full pl-8 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:bg-white outline-none transition-all font-semibold text-lg"
+                                        className="w-full pl-8 pr-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white/20 outline-none transition-all font-semibold text-lg text-white placeholder-white/50"
                                         placeholder="0.00"
                                         value={formData.amount}
                                         onChange={e => setFormData({...formData, amount: e.target.value})}
@@ -607,20 +607,20 @@ export default function App() {
                             
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Category</label>
+                                    <label className="block text-sm font-medium text-white mb-1.5">Category</label>
                                     <select 
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white"
                                         value={formData.category}
                                         onChange={e => setFormData({...formData, category: e.target.value})}
                                     >
-                                        {['Food', 'Transport', 'Rent', 'Shopping', 'Entertainment', 'Health', 'Bills', 'Other'].map(c => <option key={c}>{c}</option>)}
+                                        {['Food', 'Transport', 'Rent', 'Shopping', 'Entertainment', 'Health', 'Bills', 'Other'].map(c => <option key={c} className="bg-slate-900">{c}</option>)}
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1.5">Date</label>
+                                    <label className="block text-sm font-medium text-white mb-1.5">Date</label>
                                     <input 
                                         type="date" required 
-                                        className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                        className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white"
                                         value={formData.date}
                                         onChange={e => setFormData({...formData, date: e.target.value})}
                                     />
@@ -628,10 +628,10 @@ export default function App() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Description</label>
+                                <label className="block text-sm font-medium text-white mb-1.5">Description</label>
                                 <input 
                                     type="text" required 
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white placeholder-white/50"
                                     placeholder="Dinner at Joe's..."
                                     value={formData.description}
                                     onChange={e => setFormData({...formData, description: e.target.value})}
@@ -706,18 +706,18 @@ export default function App() {
       </main>
 
       {/* --- Mobile Bottom Nav --- */}
-      <nav className="fixed bottom-0 w-full bg-white border-t border-slate-200 flex justify-around p-3 md:hidden z-30 pb-safe">
-        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'dashboard' ? 'text-indigo-600' : 'text-slate-400'}`}>
+      <nav className="fixed bottom-0 w-full bg-white/10 backdrop-blur-xl border-t border-white/20 flex justify-around p-3 md:hidden z-30 pb-safe">
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'dashboard' ? 'text-indigo-400' : 'text-white/70'}`}>
             <LayoutDashboard size={20} />
             Home
         </button>
-        <button onClick={() => setView('add')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'add' ? 'text-indigo-600' : 'text-slate-400'}`}>
-            <div className="bg-indigo-600 text-white p-3 rounded-full -mt-6 shadow-lg border-4 border-slate-50">
+        <button onClick={() => setView('add')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'add' ? 'text-indigo-400' : 'text-white/70'}`}>
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-3 rounded-full -mt-6 shadow-2xl border-4 border-slate-900/50">
                 <PlusCircle size={24} />
             </div>
             Add
         </button>
-        <button onClick={() => setView('history')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'history' ? 'text-indigo-600' : 'text-slate-400'}`}>
+        <button onClick={() => setView('history')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'history' ? 'text-indigo-400' : 'text-white/70'}`}>
             <History size={20} />
             History
         </button>
