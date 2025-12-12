@@ -220,8 +220,8 @@ const DonutChart = ({ data }) => {
           <circle cx="50" cy="50" r="38" fill="white" />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xs text-slate-400 font-medium uppercase tracking-wider">Total</span>
-          <span className="text-xl font-bold text-slate-800">${total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+          <span className="text-xs text-white/70 font-medium uppercase tracking-wider">Total</span>
+          <span className="text-xl font-bold text-white">${total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
         </div>
       </div>
       <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-6 w-full max-w-xs">
@@ -229,9 +229,9 @@ const DonutChart = ({ data }) => {
           <div key={item.name} className="flex items-center justify-between text-sm group">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125" style={{ backgroundColor: colors[i % colors.length] }}></span>
-              <span className="text-slate-600 truncate max-w-[80px]">{item.name}</span>
+              <span className="text-white/80 truncate max-w-[80px]">{item.name}</span>
             </div>
-            <span className="font-semibold text-slate-800">${item.value.toFixed(2)}</span>
+            <span className="font-semibold text-white">${item.value.toFixed(2)}</span>
           </div>
         ))}
       </div>
@@ -363,10 +363,16 @@ export default function App() {
   // --- 4. CRUD Operations ---
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!formData.amount || !user) return; // Basic validation
+    if (!formData.amount || !user) {
+      alert('Please fill in the amount field');
+      return;
+    }
     
     const amountFloat = parseFloat(formData.amount);
-    if (isNaN(amountFloat) || amountFloat <= 0) return console.error("Invalid amount");
+    if (isNaN(amountFloat) || amountFloat <= 0) {
+      alert('Please enter a valid amount greater than 0');
+      return;
+    }
 
     setLoading(true);
     try {
@@ -379,8 +385,10 @@ export default function App() {
       // Reset form and switch view
       setFormData({ amount: '', category: 'Food', description: '', date: new Date().toISOString().split('T')[0] });
       setView('dashboard');
+      alert('Expense added successfully!');
     } catch(e) { 
-      console.error("Add failed:", e); 
+      console.error("Add failed:", e);
+      alert('Error adding expense: ' + e.message);
     } finally { 
       setLoading(false); 
     }
@@ -388,13 +396,17 @@ export default function App() {
 
   const handleDelete = async (id) => {
     if (!user) return;
-    // IMPORTANT: Using console.log instead of window.confirm/alert
-    console.log(`User confirmed deletion of expense ID: ${id}`); 
+    if (!window.confirm('Are you sure you want to delete this expense?')) return;
+    
     try { 
         const expenseDocPath = `artifacts/${sanitizedAppId}/users/${user.uid}/expenses/${id}`;
-        await deleteDoc(doc(db, expenseDocPath)); 
+        await deleteDoc(doc(db, expenseDocPath));
+        alert('Expense deleted successfully!');
     }
-    catch(e){ console.error("Deletion failed:", e); }
+    catch(e){ 
+      console.error("Deletion failed:", e);
+      alert('Error deleting expense: ' + e.message);
+    }
   };
   
   const exportData = (type) => {
@@ -551,7 +563,7 @@ export default function App() {
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Categories */}
                         <Card>
-                            <h3 className="font-bold text-slate-700 mb-6 flex items-center gap-2"><PieChart size={18} className="text-indigo-500"/> Breakdown</h3>
+                            <h3 className="font-bold text-white mb-6 flex items-center gap-2"><PieChart size={18} className="text-indigo-300"/> Breakdown</h3>
                             <DonutChart data={categoryData} />
                         </Card>
 
