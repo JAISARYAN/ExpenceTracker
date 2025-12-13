@@ -222,7 +222,7 @@ const DonutChart = ({ data }) => {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-xs text-white/70 font-medium uppercase tracking-wider">Total</span>
-          <span className="text-xl font-bold text-white">${total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+          <span className="text-xl font-bold text-white">₹{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
         </div>
       </div>
       <div className="grid grid-cols-1 gap-y-2 mt-6 w-full max-w-xs">
@@ -233,7 +233,7 @@ const DonutChart = ({ data }) => {
               <span className="text-white font-medium truncate max-w-[160px]">{item.name}</span>
             </div>
             <div className="flex items-baseline gap-3">
-              <span className="font-semibold text-white">${item.value.toFixed(2)}</span>
+              <span className="font-semibold text-white">₹{item.value.toFixed(2)}</span>
               <span className="text-white/60 text-xs">{Math.round((item.value / total) * 100)}%</span>
             </div>
           </div>
@@ -575,7 +575,7 @@ export default function App() {
                 <div className="flex items-start justify-between">
                     <div>
                         <p className="text-indigo-100 text-xs font-medium uppercase tracking-wide mb-1">Total Spent</p>
-                        <h3 className="text-2xl font-bold">${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                        <h3 className="text-2xl font-bold">₹{totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                     </div>
                     <div className="bg-white/20 p-2 rounded-lg">
                         <CreditCard size={16} className="text-white"/>
@@ -630,7 +630,7 @@ export default function App() {
                             <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={120} /></div>
                             <div className="relative z-10">
                                 <p className="text-indigo-100 font-medium mb-1 flex items-center gap-2"><Filter size={14}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter} Days`}</p>
-                                <h2 className="text-4xl font-bold tracking-tight">${totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                <h2 className="text-4xl font-bold tracking-tight">₹{totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                                 <p className="text-indigo-200 text-sm mt-4 flex items-center gap-1">
                                     <ArrowUpRight size={16}/> {filteredExpenses.length} transactions
                                 </p>
@@ -678,7 +678,7 @@ export default function App() {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-white">-${item.amount.toFixed(2)}</p>
+                                            <p className="font-bold text-white">-₹{item.amount.toFixed(2)}</p>
                                             <p className="text-xs text-white/60 truncate max-w-[120px]">{item.description}</p>
                                         </div>
                                     </div>
@@ -698,7 +698,7 @@ export default function App() {
                             <div>
                                 <label className="block text-sm font-medium text-white mb-1.5">Amount</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">$</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">₹</span>
                                     <input 
                                         type="number" step="0.01" required 
                                         className="w-full pl-8 pr-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white/20 outline-none transition-all font-semibold text-lg text-white placeholder-white/50"
@@ -781,7 +781,7 @@ export default function App() {
                                           </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-white/80">{expense.description}</td>
-                                        <td className="px-6 py-4 text-sm font-bold text-white text-right">-${expense.amount.toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-sm font-bold text-white text-right">-₹{expense.amount.toFixed(2)}</td>
                                         <td className="px-6 py-4 text-center">
                                           <button 
                                             onClick={() => handleDelete(expense.id)}
