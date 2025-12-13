@@ -102,7 +102,7 @@ const Button = ({ children, onClick, variant = "primary", className = "", disabl
 
 // Custom SVG Line Chart for Daily Trends
 const TrendChart = ({ data, days }) => {
-  if (!data || data.length === 0) return <div className="h-40 flex items-center justify-center text-slate-300 text-sm">No data for this period</div>;
+  if (!data || data.length === 0) return <div className="h-40 flex items-center justify-center text-white/60 text-sm">No data for this period</div>;
 
   // 1. Prepare Data: Fill in missing days with 0 and ensure correct sorting/mapping
   const dateRange = getDaysArray(days);
@@ -160,7 +160,7 @@ const TrendChart = ({ data, days }) => {
       </svg>
       
       {/* Date Labels */}
-      <div className="flex justify-between text-xs text-slate-400 mt-2 font-medium">
+      <div className="flex justify-between text-xs text-white/60 mt-2 font-medium">
         <span>{formatDate(dateRange[0])}</span>
         {dateRange.length > 1 && <span>{formatDate(dateRange[Math.floor(dateRange.length/2)])}</span>}
         {dateRange.length > 0 && <span>{formatDate(dateRange[dateRange.length - 1])}</span>}
@@ -172,8 +172,8 @@ const TrendChart = ({ data, days }) => {
 // Custom SVG Donut Chart for Category Breakdown
 const DonutChart = ({ data }) => {
   if (!data || data.length === 0) return (
-    <div className="h-64 flex flex-col items-center justify-center text-slate-400">
-      <div className="bg-slate-50 p-4 rounded-full mb-2"><PieChart size={24} className="opacity-20"/></div>
+    <div className="h-64 flex flex-col items-center justify-center text-white/60">
+      <div className="bg-white/5 p-4 rounded-full mb-2"><PieChart size={24} className="opacity-20 text-white/30"/></div>
       <span className="text-sm">No expenses yet</span>
     </div>
   );
@@ -216,8 +216,8 @@ const DonutChart = ({ data }) => {
               />
             );
           })}
-          {/* Inner circle to create the "donut" effect */}
-          <circle cx="50" cy="50" r="38" fill="white" />
+          {/* Inner circle to create the "donut" effect (subtle translucent to match dark glass) */}
+          <circle cx="50" cy="50" r="38" fill="rgba(255,255,255,0.06)" />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-xs text-white/70 font-medium uppercase tracking-wider">Total</span>
@@ -229,7 +229,7 @@ const DonutChart = ({ data }) => {
           <div key={item.name} className="flex items-center justify-between text-sm group">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125" style={{ backgroundColor: colors[i % colors.length] }}></span>
-              <span className="text-white/80 truncate max-w-[80px]">{item.name}</span>
+              <span className="text-white truncate max-w-[80px]">{item.name}</span>
             </div>
             <span className="font-semibold text-white">${item.value.toFixed(2)}</span>
           </div>
@@ -541,7 +541,7 @@ export default function App() {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex font-sans text-slate-800">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex font-sans text-white">
       
       {/* --- Sidebar (Desktop) --- */}
       <aside className="hidden md:flex flex-col w-64 bg-gradient-to-b from-indigo-600 via-purple-600 to-indigo-700 fixed h-full z-20 shadow-2xl">
@@ -679,7 +679,7 @@ export default function App() {
                                         </div>
                                     </div>
                                 ))}
-                                {filteredExpenses.length === 0 && <p className="text-slate-400 text-center py-8">No transactions found.</p>}
+                                {filteredExpenses.length === 0 && <p className="text-white/60 text-center py-8">No transactions found.</p>}
                             </div>
                         </Card>
                     </div>
@@ -694,7 +694,7 @@ export default function App() {
                             <div>
                                 <label className="block text-sm font-medium text-white mb-1.5">Amount</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">$</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">$</span>
                                     <input 
                                         type="number" step="0.01" required 
                                         className="w-full pl-8 pr-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white/20 outline-none transition-all font-semibold text-lg text-white placeholder-white/50"
