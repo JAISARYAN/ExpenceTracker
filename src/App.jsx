@@ -757,35 +757,35 @@ export default function App() {
                         </div>
                     </div>
                     <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead className="bg-slate-50 border-y border-slate-200">
-                                <tr>
-                                    <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Date</th>
-                                    <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Category</th>
-                                    <th className="min-w-[200px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Description</th>
-                                    <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-right">Amount</th>
-                                    <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-center">Action</th>
-                                </tr>
-                            </thead>
+                      <table className="w-full text-left">
+                        <thead className="bg-white/5 border-y border-white/10">
+                          <tr>
+                            <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Date</th>
+                            <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Category</th>
+                            <th className="min-w-[200px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Description</th>
+                            <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-right">Amount</th>
+                            <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-center">Action</th>
+                          </tr>
+                        </thead>
                             <tbody className="divide-y divide-white/10">
                                 {filteredExpenses.map((expense) => (
                                     <tr key={expense.id} className="hover:bg-white/5 transition-colors group">
-                                        <td className="px-6 py-4 text-sm text-white whitespace-nowrap">{expense.date}</td>
+                                        <td className="px-6 py-4 text-sm text-white whitespace-nowrap">{formatDate(expense.date)}</td>
                                         <td className="px-6 py-4">
-                                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/30 text-indigo-200">
-                                                {expense.category}
-                                            </span>
+                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/30 text-white">
+                                            {expense.category}
+                                          </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-white/80">{expense.description}</td>
                                         <td className="px-6 py-4 text-sm font-bold text-white text-right">-${expense.amount.toFixed(2)}</td>
                                         <td className="px-6 py-4 text-center">
-                                            <button 
-                                                onClick={() => handleDelete(expense.id)}
-                                                className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all"
-                                                title="Delete Transaction"
-                                            >
-                                                <Trash2 size={16} />
-                                            </button>
+                                          <button 
+                                            onClick={() => handleDelete(expense.id)}
+                                            className="p-2 text-white/70 hover:text-red-400 hover:bg-red-50/10 rounded-lg transition-all"
+                                            title="Delete Transaction"
+                                          >
+                                            <Trash2 size={16} />
+                                          </button>
                                         </td>
                                     </tr>
                                 ))}
