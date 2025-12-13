@@ -210,9 +210,10 @@ const DonutChart = ({ data }) => {
                 key={slice.name} 
                 d={pathData} 
                 fill={colors[i % colors.length]} 
-                stroke="white" 
-                strokeWidth="2" 
-                className="hover:opacity-90 transition-all cursor-pointer" 
+                stroke="rgba(255,255,255,0.08)" 
+                strokeWidth="0.6" 
+                style={{ transition: 'transform 220ms ease', transformOrigin: '50% 50%', filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.25))' }}
+                className="cursor-pointer hover:scale-105"
               />
             );
           })}
@@ -224,14 +225,17 @@ const DonutChart = ({ data }) => {
           <span className="text-xl font-bold text-white">${total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-x-8 gap-y-2 mt-6 w-full max-w-xs">
+      <div className="grid grid-cols-1 gap-y-2 mt-6 w-full max-w-xs">
         {data.slice(0, 6).map((item, i) => (
-          <div key={item.name} className="flex items-center justify-between text-sm group">
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full transition-transform group-hover:scale-125" style={{ backgroundColor: colors[i % colors.length] }}></span>
-              <span className="text-white truncate max-w-[80px]">{item.name}</span>
+          <div key={item.name} className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-3">
+              <span className="w-3 h-3 rounded-full ring-1 ring-white/10" style={{ backgroundColor: colors[i % colors.length] }}></span>
+              <span className="text-white font-medium truncate max-w-[160px]">{item.name}</span>
             </div>
-            <span className="font-semibold text-white">${item.value.toFixed(2)}</span>
+            <div className="flex items-baseline gap-3">
+              <span className="font-semibold text-white">${item.value.toFixed(2)}</span>
+              <span className="text-white/60 text-xs">{Math.round((item.value / total) * 100)}%</span>
+            </div>
           </div>
         ))}
       </div>
