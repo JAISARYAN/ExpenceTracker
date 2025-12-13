@@ -255,6 +255,9 @@ export default function App() {
     date: new Date().toISOString().split('T')[0] 
   });
 
+  // If Firebase is not configured or auth fails, use localStorage fallback
+  const [useLocalFallback, setUseLocalFallback] = useState(false);
+
   // --- 1. Authentication and Initialization ---
   useEffect(() => {
     const initAuth = async () => {
@@ -263,31 +266,72 @@ export default function App() {
             if (token) {
                 // Sign in using the custom token provided by the Canvas environment
                 await signInWithCustomToken(auth, token);
+                console.log("✓ Custom token auth successful");
             } else {
                 // Fallback to anonymous sign-in if no token is available
-                await signInAnonymously(auth); 
+                await signInAnonymously(auth);
+                console.log("✓ Anonymous auth successful");
             }
         } catch (error) {
-            console.error("Firebase Auth Init Failed:", error);
-            setLoading(false);
+        console.error("❌ Firebase Auth Init Failed:", error.message);
+        console.log("⚠️ Make sure Firebase credentials are configured in src/firebaseConfig.js");
+        // Enable local fallback so the UI remains usable without Firebase
+        setUseLocalFallback(true);
+        // Create a local pseudo-user so other code can operate
+        setUser({ uid: `local_${sanitizedAppId}` });
+        setLoading(false);
         }
     };
     initAuth();
     
     // Set up Auth State Listener
     const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setUser(u);
-      // Only set loading false if user is null (anonymous sign-in failed/not supported)
-      if (!u) setLoading(false);
+      if (u) {
+        console.log("✓ User authenticated:", u.uid);
+        setUser(u);
+      } else {
+        console.log("⚠️ No authenticated user");
+        // If auth isn't available, enable local fallback
+        setUseLocalFallback(true);
+        setUser({ uid: `local_${sanitizedAppId}` });
+      }
+      // Stop loading once auth status is known
+      setLoading(false);
     });
     return () => unsubscribe();
   }, []); // Run only once on mount
 
   // --- 2. Data Fetching and Real-time Listener (onSnapshot) ---
   useEffect(() => {
-    // Only proceed if user object is available (authentication complete)
     if (!user) return;
-    
+
+    // If running in local fallback mode, read/write from localStorage instead of Firestore
+    if (useLocalFallback || String(user.uid).startsWith('local_')) {
+      try {
+        const key = `fintrack:${sanitizedAppId}:expenses`;
+        const raw = localStorage.getItem(key);
+        const localData = raw ? JSON.parse(raw) : [];
+        // Ensure amounts are numbers and dates are present
+        const normalized = localData.map(d => ({
+          id: d.id,
+          amount: typeof d.amount === 'number' ? d.amount : parseFloat(d.amount) || 0,
+          category: d.category || 'Other',
+          description: d.description || '',
+          date: d.date || new Date().toISOString().split('T')[0]
+        }));
+        normalized.sort((a, b) => new Date(b.date) - new Date(a.date));
+        setExpenses(normalized);
+      } catch (err) {
+        console.error('Local storage read error:', err);
+        setExpenses([]);
+      } finally {
+        setLoading(false);
+      }
+
+      // No Firestore listener to clean up when in local mode
+      return;
+    }
+
     // Construct the private collection path: /artifacts/{appId}/users/{userId}/expenses
     const expensesCollectionPath = `artifacts/${sanitizedAppId}/users/${user.uid}/expenses`;
     const expensesCollectionRef = collection(db, expensesCollectionPath);
@@ -316,7 +360,7 @@ export default function App() {
     
     // Cleanup the listener when the component unmounts or user changes
     return () => unsub();
-  }, [user]); // Re-run when user object changes
+  }, [user, useLocalFallback]); // Re-run when user object or fallback flag changes
 
   // --- 3. Computed Data (Filtering, Aggregation) ---
   const filteredExpenses = useMemo(() => {
@@ -363,8 +407,13 @@ export default function App() {
   // --- 4. CRUD Operations ---
   const handleAdd = async (e) => {
     e.preventDefault();
-    if (!formData.amount || !user) {
+    if (!formData.amount) {
       alert('Please fill in the amount field');
+      return;
+    }
+    
+    if (!user) {
+      alert('⚠️ Authentication failed. Please configure Firebase credentials in src/firebaseConfig.js');
       return;
     }
     
@@ -376,6 +425,27 @@ export default function App() {
 
     setLoading(true);
     try {
+      // Local fallback (no Firebase) - persist to localStorage
+      if (useLocalFallback || String(user.uid).startsWith('local_')) {
+        const key = `fintrack:${sanitizedAppId}:expenses`;
+        const raw = localStorage.getItem(key);
+        const current = raw ? JSON.parse(raw) : [];
+        const newItem = {
+          id: `local_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
+          amount: amountFloat,
+          category: formData.category,
+          description: formData.description,
+          date: formData.date
+        };
+        const updated = [newItem, ...current];
+        localStorage.setItem(key, JSON.stringify(updated));
+        setExpenses(prev => [newItem, ...prev]);
+        setFormData({ amount: '', category: 'Food', description: '', date: new Date().toISOString().split('T')[0] });
+        setView('dashboard');
+        alert('Expense added locally (Firebase not configured).');
+        return;
+      }
+
       const expensesCollectionPath = `artifacts/${sanitizedAppId}/users/${user.uid}/expenses`;
       await addDoc(collection(db, expensesCollectionPath), {
         ...formData,
@@ -397,11 +467,23 @@ export default function App() {
   const handleDelete = async (id) => {
     if (!user) return;
     if (!window.confirm('Are you sure you want to delete this expense?')) return;
-    
-    try { 
-        const expenseDocPath = `artifacts/${sanitizedAppId}/users/${user.uid}/expenses/${id}`;
-        await deleteDoc(doc(db, expenseDocPath));
-        alert('Expense deleted successfully!');
+
+    try {
+      // Local fallback deletion
+      if (useLocalFallback || String(user.uid).startsWith('local_')) {
+        const key = `fintrack:${sanitizedAppId}:expenses`;
+        const raw = localStorage.getItem(key);
+        const current = raw ? JSON.parse(raw) : [];
+        const updated = current.filter(i => i.id !== id);
+        localStorage.setItem(key, JSON.stringify(updated));
+        setExpenses(prev => prev.filter(e => e.id !== id));
+        alert('Expense deleted (local).');
+        return;
+      }
+
+      const expenseDocPath = `artifacts/${sanitizedAppId}/users/${user.uid}/expenses/${id}`;
+      await deleteDoc(doc(db, expenseDocPath));
+      alert('Expense deleted successfully!');
     }
     catch(e){ 
       console.error("Deletion failed:", e);
@@ -528,6 +610,12 @@ export default function App() {
         </header>
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
+
+            {useLocalFallback && (
+              <div className="mb-4 p-3 rounded-lg bg-yellow-500/20 text-yellow-100 text-center border border-yellow-400">
+                ⚠️ Running in Local Mode — Firebase not configured. Data will be stored locally only. Create a `.env.local` from `.env.example` or update `src/firebaseConfig.js` to enable cloud sync.
+              </div>
+            )}
 
             {/* --- DASHBOARD VIEW --- */}
             {view === 'dashboard' && (
