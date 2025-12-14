@@ -258,6 +258,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('dashboard'); // 'dashboard', 'history', 'add'
   const [timeFilter, setTimeFilter] = useState('30'); // '7', '30', 'all'
+  const [customStart, setCustomStart] = useState('');
+  const [customEnd, setCustomEnd] = useState('');
   
   const [formData, setFormData] = useState({
     amount: '',
@@ -379,13 +381,24 @@ export default function App() {
   // --- 3. Computed Data (Filtering, Aggregation) ---
   const filteredExpenses = useMemo(() => {
     if (timeFilter === 'all') return expenses;
-    
+
+    if (timeFilter === 'custom') {
+      if (!customStart || !customEnd) return expenses;
+      const start = new Date(customStart + 'T00:00:00');
+      const end = new Date(customEnd + 'T23:59:59');
+      return expenses.filter(e => {
+        const expenseDate = new Date(e.date + 'T12:00:00');
+        return expenseDate >= start && expenseDate <= end;
+      });
+    }
+
+    // For numeric day filters (including '1' for today)
     const days = parseInt(timeFilter);
     const cutoff = new Date();
     // Set cutoff to the beginning of the day 'days' ago
-    cutoff.setDate(cutoff.getDate() - days);
+    cutoff.setDate(cutoff.getDate() - days + 1);
     cutoff.setHours(0,0,0,0);
-    
+
     return expenses.filter(e => {
         // Create Date object from YYYY-MM-DD string
         const expenseDate = new Date(e.date + 'T00:00:00'); 
@@ -714,17 +727,30 @@ export default function App() {
             
             {/* Time Filter Toggle */}
             {view !== 'add' && (
+              <div className="flex items-center gap-3">
                 <div className="flex bg-white/10 backdrop-blur-sm p-1 rounded-lg border border-white/20">
-                    {['7', '30', 'all'].map((t) => (
-                        <button
-                            key={t}
-                            onClick={() => setTimeFilter(t)}
-                            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${timeFilter === t ? 'bg-indigo-600/80 text-white shadow-lg border border-indigo-400' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
-                        >
-                            {t === 'all' ? 'All Time' : `${t} Days`}
-                        </button>
-                    ))}
+                  {['1','7', '30','custom', 'all'].map((t) => (
+                    <button
+                      key={t}
+                      onClick={() => setTimeFilter(t)}
+                      className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${timeFilter === t ? 'bg-indigo-600/80 text-white shadow-lg border border-indigo-400' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                    >
+                      {t === 'all' ? 'All' : t === 'custom' ? 'Custom' : t === '1' ? 'Today' : `${t} Days`}
+                    </button>
+                  ))}
                 </div>
+
+                {timeFilter === 'custom' && (
+                  <div className="inline-flex items-center bg-white/6 p-2 rounded-lg gap-2">
+                  <label className="text-xs text-white/60">From</label>
+                  <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="bg-transparent border border-white/20 px-2 py-1 rounded-md text-sm text-white" />
+                  <label className="text-xs text-white/60">To</label>
+                  <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="bg-transparent border border-white/20 px-2 py-1 rounded-md text-sm text-white" />
+                  <button onClick={() => { if(customStart && customEnd) setTimeFilter('custom'); else alert('Select both dates'); }} className="px-3 py-1 rounded-md text-xs bg-indigo-600">Apply</button>
+                  <button onClick={() => { setCustomStart(''); setCustomEnd(''); setTimeFilter('30'); }} className="px-2 py-1 rounded-md text-xs bg-white/10">Clear</button>
+                  </div>
+                )}
+              </div>
             )}
             {/* Auth Controls */}
             <div className="flex items-center gap-3">
