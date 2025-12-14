@@ -36,7 +36,7 @@ npm install
 3. **IMPORTANT: Setup Firebase** (see [FIREBASE_SETUP.md](./FIREBASE_SETUP.md))
    - Create Firebase project
    - Copy your credentials
-   - Update `src/firebaseConfig.js`
+   - Update `src/firebaseConfig.js` or create a `.env.local` (development) / `.env.production` (production)
 
 4. Start development server
 ```bash
@@ -81,7 +81,7 @@ src/
 npm run dev
 
 # Build for production
-npm build
+npm run build
 
 # Preview production build
 npm run preview
@@ -132,6 +132,22 @@ npm install
 - Use environment variables for production
 - Implement proper Firestore security rules
 - Enable authentication for production use
+
+## Deployment
+
+Preferred: use Firebase Hosting when using Firestore. Alternatively Vercel/Netlify work well with Vite.
+
+Example Firebase Hosting flow:
+```bash
+# Install Firebase CLI
+npm i -g firebase-tools
+firebase login
+firebase init hosting
+npm run build
+firebase deploy --only hosting
+```
+
+If deploying on Vercel/Netlify, add the `VITE_FIREBASE_*` vars in the platform's environment settings and set build command to `npm run build` and publish directory to `dist`.
 
 ## License
 
