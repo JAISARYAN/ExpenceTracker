@@ -35,4 +35,5 @@
   "overrides": {
     "vite": "npm:rolldown-vite@7.2.5"
   }
+  ,"author": "Aryan Jaiswal <aryan@example.com>"
 }
