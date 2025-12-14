@@ -578,6 +578,8 @@ export default function App() {
     await import('jspdf-autotable');
 
     const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    // Use a standard font (Helvetica) and ASCII-only number formatting to avoid glyph issues
+    doc.setFont('Helvetica');
     const title = 'FinTrack - Expense Report';
     const rangeLabel = timeFilter === 'all' ? 'All time' : `${timeFilter} days`;
     doc.setFontSize(16);
@@ -586,14 +588,20 @@ export default function App() {
     doc.text(`Range: ${rangeLabel}`, 40, 70);
     doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 86);
 
-    // Totals
+    const fmt = (n) => {
+      if (n == null || isNaN(n)) return '0.00';
+      // plain ASCII thousands separator with 2 decimals
+      return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    };
+
+    // Totals (use 'Rs' prefix instead of rupee glyph to avoid missing-glyph issues)
     doc.setFontSize(12);
-    doc.text(`Total Income: ₹${totalIncome.toLocaleString(undefined, {maximumFractionDigits:2})}`, 40, 110);
-    doc.text(`Total Expense: ₹${totalSpent.toLocaleString(undefined, {maximumFractionDigits:2})}`, 220, 110);
-    doc.text(`Net: ₹${netBalance.toLocaleString(undefined, {maximumFractionDigits:2})}`, 420, 110);
+    doc.text(`Total Income: Rs ${fmt(totalIncome)}`, 40, 110);
+    doc.text(`Total Expense: Rs ${fmt(totalSpent)}`, 240, 110);
+    doc.text(`Net: Rs ${fmt(netBalance)}`, 440, 110);
 
     // Category table
-    const catRows = categoryData.map(c => [c.name, `₹${c.value.toFixed(2)}`]);
+    const catRows = categoryData.map(c => [c.name, `Rs ${fmt(c.value)}`]);
     // @ts-ignore - autotable attaches to doc
     doc.autoTable({
       head: [['Category', 'Amount']],
@@ -604,7 +612,7 @@ export default function App() {
 
     // Transactions table - place after categories
     const afterCats = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 250;
-    const txRows = filteredExpenses.map(e => [formatDate(e.date), e.type.toUpperCase(), e.category || '-', `₹${e.amount.toFixed(2)}`, e.description || '']);
+    const txRows = filteredExpenses.map(e => [formatDate(e.date), e.type.toUpperCase(), e.category || '-', `Rs ${fmt(e.amount)}`, e.description || '']);
     doc.autoTable({
       head: [['Date','Type','Category','Amount','Description']],
       body: txRows,
