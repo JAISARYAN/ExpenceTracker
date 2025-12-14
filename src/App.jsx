@@ -5,6 +5,9 @@ import {
   signInAnonymously, 
   signInWithCustomToken, 
   onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut
 } from 'firebase/auth';
 import { 
   getFirestore, 
@@ -110,19 +113,27 @@ const TrendChart = ({ data, days }) => {
     const found = data.find(d => d.date === date);
     return { date, value: found ? found.value : 0 };
   });
-
   const values = chartData.map(d => d.value);
-  const maxVal = Math.max(...values, 10); // Ensure min maxVal is 10 to prevent division by zero or overly flat lines
-  
-  // Calculate points for the SVG polyline
-  const points = chartData.map((d, i) => {
-    // X: evenly distributed across 0 to 100
+  const minVal = Math.min(...values, 0);
+  const maxVal = Math.max(...values, 10);
+  const range = maxVal - minVal || 1;
+
+  // map value to SVG Y coordinate (10 -> top, 90 -> bottom) with 10px padding
+  const yFor = (v) => {
+    const normalized = (v - minVal) / range; // 0..1
+    return 100 - (normalized * 80 + 10);
+  };
+
+  const pointsArr = chartData.map((d, i) => {
     const x = (i / (chartData.length - 1)) * 100;
-    // Y: scale value from maxVal to 15 (bottom) up to 100 (top, inverted)
-    // We use a range from 15 to 100 to keep the line visible and allow some padding
-    const y = 100 - (d.value / maxVal) * 90; 
+    const y = yFor(d.value);
     return `${x},${y}`;
-  }).join(' ');
+  });
+  const points = pointsArr.join(' ');
+
+  const zeroY = yFor(0);
+  const avg = values.reduce((s, a) => s + a, 0) / values.length;
+  const strokeColor = avg >= 0 ? '#10B981' : '#EF4444';
 
   return (
     <div className="w-full h-48 relative pt-4">
@@ -132,33 +143,30 @@ const TrendChart = ({ data, days }) => {
         <line x1="0" y1="50" x2="100" y2="50" stroke="#E2E8F0" strokeWidth="0.5" strokeDasharray="4" />
         <line x1="0" y1="0" x2="100" y2="0" stroke="#E2E8F0" strokeWidth="0.5" strokeDasharray="4" />
 
-        {/* Gradient Definition */}
-        <defs>
-          <linearGradient id="gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stopColor="#6366F1" />
-            <stop offset="100%" stopColor="#6366F1" stopOpacity="0" />
-          </linearGradient>
-        </defs>
+        {/* Zero baseline */}
+        <line x1="0" y1={zeroY} x2="100" y2={zeroY} stroke="rgba(255,255,255,0.12)" strokeDasharray="2" />
 
-        {/* The Area fill (Path starts at bottom-left, follows points, ends at bottom-right) */}
-        <path
-          d={`M 0,100 ${points} L 100,100 Z`}
-          fill="url(#gradient)"
-          opacity="0.2"
-        />
-        
+        {/* Area fill relative to zero */}
+        <path d={`M 0 ${zeroY} L ${pointsArr.map(p => p).join(' L ')} L 100 ${zeroY} Z`} fill={avg >= 0 ? 'rgba(16,185,129,0.12)' : 'rgba(239,68,68,0.10)'} />
+
         {/* The Line */}
         <polyline
           fill="none"
-          stroke="#6366F1"
+          stroke={strokeColor}
           strokeWidth="2"
           points={points}
           vectorEffect="non-scaling-stroke"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
+
+        {/* Points */}
+        {chartData.map((d, i) => {
+          const [x, y] = pointsArr[i].split(',').map(Number);
+          return <circle key={d.date} cx={x} cy={y} r={0.9} fill={d.value >= 0 ? '#10B981' : '#EF4444'} />;
+        })}
       </svg>
-      
+
       {/* Date Labels */}
       <div className="flex justify-between text-xs text-white/60 mt-2 font-medium">
         <span>{formatDate(dateRange[0])}</span>
@@ -254,6 +262,7 @@ export default function App() {
   const [formData, setFormData] = useState({
     amount: '',
     category: 'Food',
+    type: 'expense',
     description: '',
     // Initialize date to today's date in YYYY-MM-DD format
     date: new Date().toISOString().split('T')[0] 
@@ -321,7 +330,8 @@ export default function App() {
           amount: typeof d.amount === 'number' ? d.amount : parseFloat(d.amount) || 0,
           category: d.category || 'Other',
           description: d.description || '',
-          date: d.date || new Date().toISOString().split('T')[0]
+          date: d.date || new Date().toISOString().split('T')[0],
+          type: d.type || 'expense'
         }));
         normalized.sort((a, b) => new Date(b.date) - new Date(a.date));
         setExpenses(normalized);
@@ -384,12 +394,20 @@ export default function App() {
   }, [expenses, timeFilter]);
 
   const totalSpent = useMemo(() => 
-    filteredExpenses.reduce((sum, item) => sum + item.amount, 0)
+    // Treat expenses as positive amounts; income will be accounted separately
+    filteredExpenses.reduce((sum, item) => sum + (item.type === 'income' ? 0 : item.amount), 0)
   , [filteredExpenses]);
   
+  const totalIncome = useMemo(() =>
+    filteredExpenses.reduce((sum, item) => sum + (item.type === 'income' ? item.amount : 0), 0)
+  , [filteredExpenses]);
+
+  const netBalance = useMemo(() => totalIncome - totalSpent, [totalIncome, totalSpent]);
+  
   const categoryData = useMemo(() => {
+    // Only include expense-type transactions for category breakdown
     const stats = {};
-    filteredExpenses.forEach(item => {
+    filteredExpenses.filter(i => i.type !== 'income').forEach(item => {
       stats[item.category] = (stats[item.category] || 0) + item.amount;
     });
     return Object.keys(stats)
@@ -401,14 +419,26 @@ export default function App() {
   const dailyTrendData = useMemo(() => {
     if (timeFilter === 'all') return []; 
     const stats = {};
+    // For trend, treat income as positive and expenses as negative to show net movement
     filteredExpenses.forEach(item => {
-      stats[item.date] = (stats[item.date] || 0) + item.amount;
+      const delta = item.type === 'income' ? item.amount : -item.amount;
+      stats[item.date] = (stats[item.date] || 0) + delta;
     });
     // Convert object to array of { date, value }
     return Object.keys(stats).map(date => ({ date, value: stats[date] }));
   }, [filteredExpenses, timeFilter]);
 
   // --- 4. CRUD Operations ---
+  // Handle selecting Income vs Expense in the form
+  const handleTypeSelect = (t) => {
+    setFormData(prev => ({
+      ...prev,
+      type: t,
+      // Clear category when selecting income so user picks none
+      category: t === 'income' ? '' : (prev.category || 'Food')
+    }));
+  };
+
   const handleAdd = async (e) => {
     e.preventDefault();
     if (!formData.amount) {
@@ -438,13 +468,14 @@ export default function App() {
           id: `local_${Date.now()}_${Math.random().toString(36).slice(2,8)}`,
           amount: amountFloat,
           category: formData.category,
+          type: formData.type || 'expense',
           description: formData.description,
           date: formData.date
         };
         const updated = [newItem, ...current];
         localStorage.setItem(key, JSON.stringify(updated));
         setExpenses(prev => [newItem, ...prev]);
-        setFormData({ amount: '', category: 'Food', description: '', date: new Date().toISOString().split('T')[0] });
+        setFormData({ amount: '', category: 'Food', type: 'expense', description: '', date: new Date().toISOString().split('T')[0] });
         setView('dashboard');
         alert('Expense added locally (Firebase not configured).');
         return;
@@ -454,10 +485,11 @@ export default function App() {
       await addDoc(collection(db, expensesCollectionPath), {
         ...formData,
         amount: amountFloat,
+        type: formData.type || 'expense',
         createdAt: serverTimestamp() // Adds Firestore timestamp for internal sorting/tracking
       });
       // Reset form and switch view
-      setFormData({ amount: '', category: 'Food', description: '', date: new Date().toISOString().split('T')[0] });
+      setFormData({ amount: '', category: 'Food', type: 'expense', description: '', date: new Date().toISOString().split('T')[0] });
       setView('dashboard');
       alert('Expense added successfully!');
     } catch(e) { 
@@ -504,6 +536,7 @@ export default function App() {
       Category: e.category,
       Description: e.description,
       Amount: e.amount,
+      Type: e.type || 'expense',
       ID: e.id 
     }));
 
@@ -536,6 +569,76 @@ export default function App() {
     a.download = `expenses_${timeFilter}days.${extension}`;
     a.click();
     URL.revokeObjectURL(url); // Clean up
+  };
+
+  const exportPDF = async () => {
+    if (filteredExpenses.length === 0) return console.log('No data to export');
+    // Dynamically import to avoid bundler issues if package missing
+    const { jsPDF } = await import('jspdf');
+    await import('jspdf-autotable');
+
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const title = 'FinTrack - Expense Report';
+    const rangeLabel = timeFilter === 'all' ? 'All time' : `${timeFilter} days`;
+    doc.setFontSize(16);
+    doc.text(title, 40, 50);
+    doc.setFontSize(11);
+    doc.text(`Range: ${rangeLabel}`, 40, 70);
+    doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 86);
+
+    // Totals
+    doc.setFontSize(12);
+    doc.text(`Total Income: ₹${totalIncome.toLocaleString(undefined, {maximumFractionDigits:2})}`, 40, 110);
+    doc.text(`Total Expense: ₹${totalSpent.toLocaleString(undefined, {maximumFractionDigits:2})}`, 220, 110);
+    doc.text(`Net: ₹${netBalance.toLocaleString(undefined, {maximumFractionDigits:2})}`, 420, 110);
+
+    // Category table
+    const catRows = categoryData.map(c => [c.name, `₹${c.value.toFixed(2)}`]);
+    // @ts-ignore - autotable attaches to doc
+    doc.autoTable({
+      head: [['Category', 'Amount']],
+      body: catRows,
+      startY: 130,
+      styles: { fontSize: 10 }
+    });
+
+    // Transactions table - place after categories
+    const afterCats = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 250;
+    const txRows = filteredExpenses.map(e => [formatDate(e.date), e.type.toUpperCase(), e.category || '-', `₹${e.amount.toFixed(2)}`, e.description || '']);
+    doc.autoTable({
+      head: [['Date','Type','Category','Amount','Description']],
+      body: txRows,
+      startY: afterCats,
+      styles: { fontSize: 9 },
+      columnStyles: { 4: { cellWidth: 160 } }
+    });
+
+    doc.save(`fintrack_report_${timeFilter}.pdf`);
+  };
+
+  // --- Auth Helpers for Interactive Sign-in ---
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      await signInWithPopup(auth, provider);
+      setUseLocalFallback(false);
+      alert('Signed in with Google');
+    } catch (err) {
+      console.error('Google sign-in failed:', err);
+      alert('Google sign-in failed: ' + err.message);
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await signOut(auth);
+      setUser(null);
+      setUseLocalFallback(true);
+      alert('Signed out');
+    } catch (err) {
+      console.error('Sign-out failed:', err);
+      alert('Sign-out failed: ' + err.message);
+    }
   };
 
   if (loading && !expenses.length) return (
@@ -574,18 +677,22 @@ export default function App() {
                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-white border border-white/20 shadow-lg">
                 <div className="flex items-start justify-between">
                     <div>
-                        <p className="text-indigo-100 text-xs font-medium uppercase tracking-wide mb-1">Total Spent</p>
-                        <h3 className="text-2xl font-bold">₹{totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+                <p className="text-indigo-100 text-xs font-medium uppercase tracking-wide mb-1">Net Balance</p>
+                <h3 className="text-2xl font-bold">₹{netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                     </div>
                     <div className="bg-white/20 p-2 rounded-lg">
                         <CreditCard size={16} className="text-white"/>
                     </div>
                 </div>
-                <div className="mt-4 pt-4 border-t border-white/20 flex gap-2">
-                    <button onClick={() => exportData('csv')} className="text-xs text-indigo-100 hover:text-white flex items-center gap-1 transition-colors"><FileSpreadsheet size={12}/> CSV</button>
-                    <div className="w-px h-3 bg-white/30 self-center"></div>
-                    <button onClick={() => exportData('json')} className="text-xs text-indigo-100 hover:text-white flex items-center gap-1 transition-colors"><FileJson size={12}/> JSON</button>
-                </div>
+            <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between gap-2 text-sm">
+              <div className="text-white/70">Income: <span className="font-semibold text-emerald-300">₹{totalIncome.toLocaleString()}</span></div>
+              <div className="text-white/70">Expense: <span className="font-semibold text-rose-300">₹{totalSpent.toLocaleString()}</span></div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-white/20 flex gap-2">
+              <button onClick={() => exportData('csv')} className="text-xs text-indigo-100 hover:text-white flex items-center gap-1 transition-colors"><FileSpreadsheet size={12}/> CSV</button>
+              <div className="w-px h-3 bg-white/30 self-center"></div>
+              <button onClick={exportPDF} className="text-xs text-indigo-100 hover:text-white flex items-center gap-1 transition-colors"><FileJson size={12}/> PDF</button>
+            </div>
               </div>
            </div>
         </div>
@@ -611,6 +718,19 @@ export default function App() {
                     ))}
                 </div>
             )}
+            {/* Auth Controls */}
+            <div className="flex items-center gap-3">
+              {user && !String(user.uid).startsWith('local_') ? (
+                <div className="flex items-center gap-3">
+                  <div className="text-sm text-white/80">{user.displayName || user.email || user.uid.slice(0,6)}</div>
+                  <button onClick={handleSignOut} className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/10 hover:bg-white/20">Sign out</button>
+                </div>
+              ) : (
+                <div>
+                  <button onClick={handleGoogleSignIn} className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/10 hover:bg-white/20">Sign in</button>
+                </div>
+              )}
+            </div>
         </header>
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
@@ -630,7 +750,7 @@ export default function App() {
                             <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={120} /></div>
                             <div className="relative z-10">
                                 <p className="text-indigo-100 font-medium mb-1 flex items-center gap-2"><Filter size={14}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter} Days`}</p>
-                                <h2 className="text-4xl font-bold tracking-tight">₹{totalSpent.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                <h2 className="text-4xl font-bold tracking-tight">₹{netBalance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
                                 <p className="text-indigo-200 text-sm mt-4 flex items-center gap-1">
                                     <ArrowUpRight size={16}/> {filteredExpenses.length} transactions
                                 </p>
@@ -678,7 +798,7 @@ export default function App() {
                                             </div>
                                         </div>
                                         <div className="text-right">
-                                            <p className="font-bold text-white">-₹{item.amount.toFixed(2)}</p>
+                                    <p className={`font-bold ${item.type === 'income' ? 'text-emerald-300' : 'text-white'}`}>{item.type === 'income' ? `+₹${item.amount.toFixed(2)}` : `-₹${item.amount.toFixed(2)}`}</p>
                                             <p className="text-xs text-white/60 truncate max-w-[120px]">{item.description}</p>
                                         </div>
                                     </div>
@@ -708,16 +828,29 @@ export default function App() {
                                     />
                                 </div>
                             </div>
+                            <div>
+                              <label className="block text-sm font-medium text-white mb-2.5">Type</label>
+                              <div className="inline-flex rounded-xl bg-white/6 p-1">
+                                <button type="button" onClick={() => handleTypeSelect('expense')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.type === 'expense' ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white' : 'text-white/80 hover:bg-white/5'}`}>
+                                  Expense
+                                </button>
+                                <button type="button" onClick={() => handleTypeSelect('income')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.type === 'income' ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white' : 'text-white/80 hover:bg-white/5'}`}>
+                                  Income
+                                </button>
+                              </div>
+                            </div>
                             
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-white mb-1.5">Category</label>
                                     <select 
-                                        className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white"
-                                        value={formData.category}
-                                        onChange={e => setFormData({...formData, category: e.target.value})}
+                                      className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white"
+                                      value={formData.category}
+                                      onChange={e => setFormData({...formData, category: e.target.value})}
+                                      disabled={formData.type === 'income'}
                                     >
-                                        {['Food', 'Transport', 'Rent', 'Shopping', 'Entertainment', 'Health', 'Bills', 'Other'].map(c => <option key={c} className="bg-slate-900">{c}</option>)}
+                                      <option value="" disabled className="text-white/60">{formData.type === 'income' ? 'Not applicable for income' : 'Select category'}</option>
+                                      {['Food', 'Transport', 'Rent', 'Shopping', 'Entertainment', 'Health', 'Bills', 'Other'].map(c => <option key={c} value={c} className="bg-slate-900">{c}</option>)}
                                     </select>
                                 </div>
                                 <div>
@@ -757,7 +890,7 @@ export default function App() {
                     <div className="flex justify-end p-4">
                         <div className="flex space-x-2">
                              <Button onClick={() => exportData('csv')} variant="ghost" icon={FileSpreadsheet} className="text-xs">Export CSV</Button>
-                             <Button onClick={() => exportData('json')} variant="ghost" icon={FileJson} className="text-xs">Export JSON</Button>
+                             <Button onClick={exportPDF} variant="ghost" icon={FileJson} className="text-xs">Export PDF</Button>
                         </div>
                     </div>
                     <div className="overflow-x-auto">
@@ -781,7 +914,13 @@ export default function App() {
                                           </span>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-white/80">{expense.description}</td>
-                                        <td className="px-6 py-4 text-sm font-bold text-white text-right">-₹{expense.amount.toFixed(2)}</td>
+                                        <td className="px-6 py-4 text-sm font-bold text-white text-right">
+                                          {expense.type === 'income' ? (
+                                            <span className="text-emerald-300">+₹{expense.amount.toFixed(2)}</span>
+                                          ) : (
+                                            <span className="text-white">-₹{expense.amount.toFixed(2)}</span>
+                                          )}
+                                        </td>
                                         <td className="px-6 py-4 text-center">
                                           <button 
                                             onClick={() => handleDelete(expense.id)}
