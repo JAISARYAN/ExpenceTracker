@@ -179,4 +179,3 @@ This project is open source and available on GitHub.
 
 ---
 
-Built with ❤️ by Aditya
