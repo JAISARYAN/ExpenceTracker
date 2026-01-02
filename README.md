@@ -50,7 +50,7 @@ Built by **Aryan Jaiswal** — software engineer and maker. Connect:
 npm run dev
 ```
 
-5. Open http://localhost:5173 in your browser
+5. Open http://localhost:3001 in your browser
 
 ## Firebase Setup
 
@@ -153,6 +153,16 @@ firebase init hosting
 npm run build
 firebase deploy --only hosting
 ```
+
+### GitHub Actions (automatic deploy)
+
+This repo includes a GitHub Actions workflow that builds and deploys `dist/` to Firebase Hosting on push to `main`.
+
+Required GitHub secrets:
+- `FIREBASE_PROJECT_ID` — your Firebase project id (e.g. `my-firebase-project`)
+- `FIREBASE_SERVICE_ACCOUNT` — JSON content of a Firebase service account with the `Firebase Hosting Admin` role (or Editor). Create a service account in Google Cloud, download the JSON, and paste the entire file as a GitHub secret.
+
+Once the secrets are added, pushing to `main` will trigger the action and deploy automatically.
 
 If deploying on Vercel/Netlify, add the `VITE_FIREBASE_*` vars in the platform's environment settings and set build command to `npm run build` and publish directory to `dist`.
 

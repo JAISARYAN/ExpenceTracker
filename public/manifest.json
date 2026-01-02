@@ -1,0 +1,17 @@
+{
+  "name": "Expense Tracker",
+  "short_name": "Expenses",
+  "description": "Track your expenses easily",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e1e2f",
+  "theme_color": "#4f46e5",
+  "icons": [
+    {
+      "src": "vite.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

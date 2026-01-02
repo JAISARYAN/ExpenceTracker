@@ -16,6 +16,20 @@ module.exports = {
         'indigo-600': '#4f46e5',
         'violet-600': '#7c3aed',
         'slate-50': '#f8fafc',
+      },
+      // Touch-friendly minimum sizes for mobile
+      minHeight: {
+        'touch': '44px',
+      },
+      minWidth: {
+        'touch': '44px',
+      },
+      // Safe area support for notched devices
+      spacing: {
+        'safe': 'max(1rem, env(safe-area-inset-bottom))',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+        'safe-top': 'env(safe-area-inset-top)',
       }
     },
   },

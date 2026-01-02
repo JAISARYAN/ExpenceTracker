@@ -91,13 +91,13 @@ const getDaysArray = (days) => {
 // --- UI Components ---
 
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:border-white/40 ${className}`}>
+  <div className={`bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-6 transition-all duration-300 hover:shadow-2xl hover:border-white/40 ${className}`}>
     {children}
   </div>
 );
 
 const Button = ({ children, onClick, variant = "primary", className = "", disabled = false, icon: Icon, type = "button" }) => {
-  const baseStyle = "sm:px-4 sm:py-2.5 px-3 py-2 min-h-touch min-w-touch rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95";
+  const baseStyle = "px-4 py-2.5 rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-sm active:scale-95";
   const variants = {
     primary: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:to-indigo-700",
     secondary: "bg-white/20 text-white border border-white/30 backdrop-blur-sm hover:bg-white/30 hover:border-white/50",
@@ -308,12 +308,135 @@ const App = () => {
     const timer = setTimeout(() => {
       setIsLoading(false);
     }, 1000);
+    
+    // Initialize authentication
+    const initAuth = async () => {
+      try {
+        const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+        if (token) {
+          await signInWithCustomToken(auth, token);
+          console.log("✓ Custom token auth successful");
+        } else {
+          // Fallback to anonymous auth if no token
+          await signInAnonymously(auth);
+          console.log("✓ Anonymous auth successful");
+        }
+      } catch (error) {
+        console.error("Auth error:", error);
+        setUseLocalFallback(true);
+      }
+    };
+
+    initAuth();
+    
+    // Set up Auth State Listener
+    const unsubscribe = onAuthStateChanged(auth, (u) => {
+      if (u) {
+        setUser(u);
+        // Load expenses when user is authenticated
+        loadExpenses();
+      } else {
+        setUser(null);
+      }
+    });
 
     return () => {
       window.removeEventListener('resize', handleResize);
       clearTimeout(timer);
+      unsubscribe();
     };
   }, []);
+
+  // Load expenses from Firestore or localStorage
+  const loadExpenses = async () => {
+    try {
+      setLoading(true);
+      if (useLocalFallback) {
+        // Load from localStorage
+        const savedExpenses = JSON.parse(localStorage.getItem('expenses') || '[]');
+        setExpenses(savedExpenses);
+      } else {
+        // Load from Firestore
+        const expensesRef = collection(db, 'expenses');
+        const q = query(expensesRef);
+        
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const expensesData = [];
+          snapshot.forEach((doc) => {
+            expensesData.push({ id: doc.id, ...doc.data() });
+          });
+          setExpenses(expensesData);
+        });
+        
+        return () => unsubscribe();
+      }
+    } catch (error) {
+      console.error("Error loading expenses:", error);
+      setUseLocalFallback(true);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Filter expenses based on selected time period
+  const filteredExpenses = useMemo(() => {
+    const now = new Date();
+    let startDate = new Date();
+    const filter = activeFilter || { type: timeFilter };
+    
+    if (filter.type === 'all') return expenses;
+    
+    if (filter.type === 'custom' && customStart && customEnd) {
+      startDate = new Date(customStart);
+      const endDate = new Date(customEnd);
+      return expenses.filter(expense => {
+        const expenseDate = new Date(expense.date);
+        return expenseDate >= startDate && expenseDate <= endDate;
+      });
+    } else if (filter.type !== 'all') {
+      const days = parseInt(filter.type) || 30;
+      startDate.setDate(now.getDate() - days);
+    }
+    
+    return expenses.filter(expense => new Date(expense.date) >= startDate);
+  }, [expenses, activeFilter, timeFilter, customStart, customEnd]);
+
+  // Calculate category data for charts
+  const categoryData = useMemo(() => {
+    const stats = {};
+    filteredExpenses.filter(i => i.type !== 'income').forEach(item => {
+      stats[item.category] = (stats[item.category] || 0) + item.amount;
+    });
+    return Object.entries(stats).map(([name, value]) => ({
+      name,
+      value: parseFloat(value.toFixed(2))
+    }));
+  }, [filteredExpenses]);
+
+  // Calculate total income, expenses, and balance
+  const { totalIncome, totalExpense, balance } = useMemo(() => {
+    return filteredExpenses.reduce((acc, item) => {
+      if (item.type === 'income') {
+        acc.totalIncome += item.amount;
+      } else {
+        acc.totalExpense += item.amount;
+      }
+      acc.balance = acc.totalIncome - acc.totalExpense;
+      return acc;
+    }, { totalIncome: 0, totalExpense: 0, balance: 0 });
+  }, [filteredExpenses]);
+
+  // Show loading spinner while app is initializing
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-gray-900 z-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
+          <p className="text-white/80 text-lg">Loading Expense Tracker...</p>
+        </div>
+      </div>
+    );
+  }
 
   // --- 1. Authentication and Initialization ---
   useEffect(() => {
@@ -419,54 +542,6 @@ const App = () => {
     // Cleanup the listener when the component unmounts or user changes
     return () => unsub();
   }, [user, useLocalFallback]); // Re-run when user object or fallback flag changes
-
-  // Filter expenses based on selected time period
-  const filteredExpenses = useMemo(() => {
-    const now = new Date();
-    let startDate = new Date();
-    const filter = activeFilter || { type: timeFilter };
-    
-    if (filter.type === 'all') return expenses;
-    
-    if (filter.type === 'custom' && customStart && customEnd) {
-      startDate = new Date(customStart);
-      const endDate = new Date(customEnd);
-      return expenses.filter(expense => {
-        const expenseDate = new Date(expense.date);
-        return expenseDate >= startDate && expenseDate <= endDate;
-      });
-    } else if (filter.type !== 'all') {
-      const days = parseInt(filter.type) || 30;
-      startDate.setDate(now.getDate() - days);
-    }
-    
-    return expenses.filter(expense => new Date(expense.date) >= startDate);
-  }, [expenses, activeFilter, timeFilter, customStart, customEnd]);
-
-  // Calculate category data for charts
-  const categoryData = useMemo(() => {
-    const stats = {};
-    filteredExpenses.filter(i => i.type !== 'income').forEach(item => {
-      stats[item.category] = (stats[item.category] || 0) + item.amount;
-    });
-    return Object.entries(stats).map(([name, value]) => ({
-      name,
-      value: parseFloat(value.toFixed(2))
-    }));
-  }, [filteredExpenses]);
-
-  // Calculate total income, expenses, and balance
-  const { totalIncome, totalExpense, balance } = useMemo(() => {
-    return filteredExpenses.reduce((acc, item) => {
-      if (item.type === 'income') {
-        acc.totalIncome += item.amount;
-      } else {
-        acc.totalExpense += item.amount;
-      }
-      acc.balance = acc.totalIncome - acc.totalExpense;
-      return acc;
-    }, { totalIncome: 0, totalExpense: 0, balance: 0 });
-  }, [filteredExpenses]);
 
   // --- 3. Computed Data (Filtering, Aggregation) ---
 
@@ -714,18 +789,6 @@ const App = () => {
     }
   };
 
-  // Show loading spinner while app is initializing
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center bg-gray-900 z-50">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-indigo-500 mx-auto mb-4"></div>
-          <p className="text-white/80 text-lg">Loading Expense Tracker...</p>
-        </div>
-      </div>
-    );
-  }
-
   if (loading && !expenses.length) return (
     <div className="min-h-screen bg-slate-50 flex items-center justify-center">
       <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600"></div>
@@ -733,30 +796,30 @@ const App = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex flex-col md:flex-row font-sans text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex font-sans text-white">
       
       {/* --- Sidebar (Desktop) --- */}
-      <aside className="hidden md:flex flex-col w-48 lg:w-64 bg-gradient-to-b from-indigo-600 via-purple-600 to-indigo-700 fixed md:relative h-full z-20 shadow-2xl">
-        <div className="p-4 lg:p-6 flex items-center gap-2 lg:gap-3 text-white font-bold text-xl lg:text-2xl tracking-tight">
-          <div className="bg-white/20 backdrop-blur-sm p-2 lg:p-2.5 rounded-lg border border-white/30">
-            <WalletCards size={24} className="lg:w-7 lg:h-7" />
+      <aside className="hidden md:flex flex-col w-64 bg-gradient-to-b from-indigo-600 via-purple-600 to-indigo-700 fixed h-full z-20 shadow-2xl">
+        <div className="p-6 flex items-center gap-3 text-white font-bold text-2xl tracking-tight">
+          <div className="bg-white/20 backdrop-blur-sm p-2.5 rounded-lg border border-white/30">
+            <WalletCards size={28} />
           </div>
-          <span className="text-base lg:text-base">FinTrack</span>
+          <span>FinTrack</span>
         </div>
         
-        <nav className="flex-1 px-3 lg:px-4 space-y-1 lg:space-y-2 mt-4 lg:mt-6">
-          <button onClick={() => setView('dashboard')} className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3.5 rounded-xl transition-all font-medium text-sm lg:text-base min-h-touch ${view === 'dashboard' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
-            <LayoutDashboard size={20} /> <span className="hidden lg:inline">Dashboard</span>
+        <nav className="flex-1 px-4 space-y-2 mt-6">
+          <button onClick={() => setView('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-medium ${view === 'dashboard' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
+            <LayoutDashboard size={20} /> Dashboard
           </button>
-          <button onClick={() => setView('add')} className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3.5 rounded-xl transition-all font-medium text-sm lg:text-base min-h-touch ${view === 'add' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
-            <PlusCircle size={20} /> <span className="hidden lg:inline">Add</span>
+          <button onClick={() => setView('add')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-medium ${view === 'add' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
+            <PlusCircle size={20} /> Add Expense
           </button>
-          <button onClick={() => setView('history')} className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3.5 rounded-xl transition-all font-medium text-sm lg:text-base min-h-touch ${view === 'history' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
-            <History size={20} /> <span className="hidden lg:inline">History</span>
+          <button onClick={() => setView('history')} className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-xl transition-all font-medium ${view === 'history' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
+            <History size={20} /> Transactions
           </button>
         </nav>
 
-        <div className="p-4 lg:p-6 border-t border-white/20">
+        <div className="p-6 border-t border-white/20">
            {/* Mini Stats in Sidebar */}
            <div className="space-y-4">
                <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-white border border-white/20 shadow-lg">
@@ -784,16 +847,15 @@ const App = () => {
       </aside>
 
       {/* --- Main Content --- */}
-      <main className="flex-1 md:ml-48 lg:ml-64 pb-24 md:pb-6">
+      <main className="flex-1 md:ml-64 pb-24 md:pb-6">
         {/* Header (Mobile & Desktop) */}
-        <header className="sticky top-0 z-10 bg-white/10 backdrop-blur-xl border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 shadow-lg">
-            <h1 className="text-xl sm:text-2xl font-bold text-white capitalize">{view === 'add' ? 'Add New Expense' : view === 'history' ? 'Transactions' : 'Dashboard'}</h1>
+        <header className="sticky top-0 z-10 bg-white/10 backdrop-blur-xl border-b border-white/20 px-6 py-4 flex justify-between items-center shadow-lg">
+            <h1 className="text-2xl font-bold text-white capitalize">{view === 'add' ? 'Add New Expense' : view === 'history' ? 'Transaction History' : 'Dashboard'}</h1>
             
             {/* Time Filter Toggle */}
             {view !== 'add' && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
+                <div className="flex items-center gap-3">
                     <div className="flex bg-white/10 backdrop-blur-sm p-1 rounded-lg border border-white/20">
-
                         {['1','7', '30','custom', 'all'].map((t) => (
                             <button
                                 key={t}
@@ -854,8 +916,8 @@ const App = () => {
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
 
             {useLocalFallback && (
-              <div className="mb-4 p-3 sm:p-4 rounded-lg bg-yellow-500/20 text-yellow-100 text-center border border-yellow-400 text-xs sm:text-sm">
-                ⚠️ Running in Local Mode — Firebase not configured. Data will be stored locally only.
+              <div className="mb-4 p-3 rounded-lg bg-yellow-500/20 text-yellow-100 text-center border border-yellow-400">
+                ⚠️ Running in Local Mode — Firebase not configured. Data will be stored locally only. Create a `.env.local` from `.env.example` or update `src/firebaseConfig.js` to enable cloud sync.
               </div>
             )}
 
@@ -863,14 +925,14 @@ const App = () => {
             {view === 'dashboard' && (
                 <>
                     {/* Top Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 px-4 sm:px-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                          <Card className="bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 text-white border-none relative overflow-hidden shadow-lg shadow-indigo-500/30">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={80} className="sm:w-120 sm:h-120" /></div>
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={120} /></div>
                             <div className="relative z-10">
-                                <p className="text-indigo-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><Filter size={14}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter}d`}</p>
-                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
-                                <p className="text-indigo-200 text-xs sm:text-sm mt-4 flex items-center gap-1">
-                                    <ArrowUpRight size={16}/> {filteredExpenses.length} txns
+                                <p className="text-indigo-100 font-medium mb-1 flex items-center gap-2"><Filter size={14}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter} Days`}</p>
+                                <h2 className="text-4xl font-bold tracking-tight">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                <p className="text-indigo-200 text-sm mt-4 flex items-center gap-1">
+                                    <ArrowUpRight size={16}/> {filteredExpenses.length} transactions
                                 </p>
                             </div>
                          </Card>
@@ -1062,28 +1124,30 @@ const App = () => {
                     </div>
                 </Card>
             )}
+
         </div>
       </main>
 
       {/* --- Mobile Bottom Nav --- */}
-      <nav className="fixed bottom-0 w-full bg-white/10 backdrop-blur-xl border-t border-white/20 flex justify-around p-2 md:hidden z-30 pb-safe">
-        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${view === 'dashboard' ? 'text-indigo-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+      <nav className="fixed bottom-0 w-full bg-white/10 backdrop-blur-xl border-t border-white/20 flex justify-around p-3 md:hidden z-30 pb-safe">
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'dashboard' ? 'text-indigo-400' : 'text-white/70'}`}>
             <LayoutDashboard size={20} />
-            <span>Home</span>
+            Home
         </button>
-        <button onClick={() => setView('add')} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${view === 'add' ? 'text-indigo-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-2 rounded-full -mt-4 shadow-2xl border-4 border-slate-900/50">
-                <PlusCircle size={20} />
+        <button onClick={() => setView('add')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'add' ? 'text-indigo-400' : 'text-white/70'}`}>
+            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-3 rounded-full -mt-6 shadow-2xl border-4 border-slate-900/50">
+                <PlusCircle size={24} />
             </div>
-            <span>Add</span>
+            Add
         </button>
-        <button onClick={() => setView('history')} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${view === 'history' ? 'text-indigo-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+        <button onClick={() => setView('history')} className={`flex flex-col items-center gap-1 text-xs font-medium ${view === 'history' ? 'text-indigo-400' : 'text-white/70'}`}>
             <History size={20} />
-            <span>History</span>
+            History
         </button>
       </nav>
+
     </div>
   );
-};
+}
 
 export default App;
