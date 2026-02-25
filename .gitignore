@@ -12,6 +12,14 @@ dist
 dist-ssr
 *.local
 
+# Environment variables - NEVER commit these files with real credentials
+.env
+.env.local
+.env.*.local
+
+# Firebase configuration with real credentials
+src/firebaseConfig.js
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
