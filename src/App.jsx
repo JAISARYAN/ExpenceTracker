@@ -91,18 +91,18 @@ const getDaysArray = (days) => {
 // --- UI Components ---
 
 const Card = ({ children, className = "" }) => (
-  <div className={`bg-white/10 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/20 p-4 sm:p-6 transition-all duration-300 hover:shadow-2xl hover:border-white/40 ${className}`}>
+  <div className={`bg-gradient-to-br from-white/15 to-white/5 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-4 md:p-6 lg:p-8 transition-all duration-300 hover:shadow-3xl hover:border-white/40 hover:from-white/20 hover:to-white/8 ${className}`}>
     {children}
   </div>
 );
 
 const Button = ({ children, onClick, variant = "primary", className = "", disabled = false, icon: Icon, type = "button" }) => {
-  const baseStyle = "sm:px-4 sm:py-2.5 px-3 py-2 min-h-touch min-w-touch rounded-xl font-medium transition-all duration-200 flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-95";
+  const baseStyle = "px-3 md:px-4 py-2 md:py-2.5 min-h-[44px] min-w-[44px] rounded-xl font-semibold transition-all duration-300 flex items-center justify-center gap-2 text-xs md:text-sm active:scale-95 shadow-md";
   const variants = {
-    primary: "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:to-indigo-700",
-    secondary: "bg-white/20 text-white border border-white/30 backdrop-blur-sm hover:bg-white/30 hover:border-white/50",
-    danger: "bg-red-500/20 text-red-200 hover:bg-red-500/40 border border-red-500/40",
-    ghost: "text-white/70 hover:text-white hover:bg-white/10"
+    primary: "bg-gradient-to-r from-purple-600 via-violet-600 to-indigo-600 text-white shadow-xl shadow-violet-500/40 hover:shadow-2xl hover:shadow-violet-500/60 hover:scale-105 transform",
+    secondary: "bg-white/20 text-white border border-white/40 backdrop-blur-sm hover:bg-white/35 hover:border-white/60 hover:shadow-lg hover:scale-105",
+    danger: "bg-gradient-to-r from-red-500/30 to-rose-500/30 text-red-100 hover:from-red-500/50 hover:to-rose-500/50 border border-red-500/50 hover:shadow-lg",
+    ghost: "text-white/70 hover:text-white hover:bg-white/15 hover:shadow-md"
   };
   
   return (
@@ -120,7 +120,7 @@ const Button = ({ children, onClick, variant = "primary", className = "", disabl
 
 // Custom SVG Line Chart for Daily Trends
 const TrendChart = ({ data, days }) => {
-  if (!data || data.length === 0) return <div className="h-40 flex items-center justify-center text-white/60 text-sm">No data for this period</div>;
+  if (!data || data.length === 0) return <div className="h-40 md:h-48 flex items-center justify-center text-white/60 text-xs md:text-sm">No data for this period</div>;
 
   // 1. Prepare Data: Fill in missing days with 0 and ensure correct sorting/mapping
   const dateRange = getDaysArray(days);
@@ -151,7 +151,7 @@ const TrendChart = ({ data, days }) => {
   const strokeColor = avg >= 0 ? '#10B981' : '#EF4444';
 
   return (
-    <div className="w-full h-48 relative pt-4">
+    <div className="w-full h-40 md:h-48 relative pt-4">
       <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="w-full h-full overflow-visible">
         {/* Grid lines */}
         <line x1="0" y1="100" x2="100" y2="100" stroke="#E2E8F0" strokeWidth="0.5" />
@@ -184,9 +184,9 @@ const TrendChart = ({ data, days }) => {
 
       {/* Date Labels */}
       <div className="flex justify-between text-xs text-white/60 mt-2 font-medium">
-        <span>{formatDate(dateRange[0])}</span>
-        {dateRange.length > 1 && <span>{formatDate(dateRange[Math.floor(dateRange.length/2)])}</span>}
-        {dateRange.length > 0 && <span>{formatDate(dateRange[dateRange.length - 1])}</span>}
+        <span className="truncate">{formatDate(dateRange[0])}</span>
+        {dateRange.length > 1 && <span className="truncate">{formatDate(dateRange[Math.floor(dateRange.length/2)])}</span>}
+        {dateRange.length > 0 && <span className="truncate">{formatDate(dateRange[dateRange.length - 1])}</span>}
       </div>
     </div>
   );
@@ -195,9 +195,9 @@ const TrendChart = ({ data, days }) => {
 // Custom SVG Donut Chart for Category Breakdown
 const DonutChart = ({ data }) => {
   if (!data || data.length === 0) return (
-    <div className="h-64 flex flex-col items-center justify-center text-white/60">
+    <div className="h-48 md:h-64 flex flex-col items-center justify-center text-white/60">
       <div className="bg-white/5 p-4 rounded-full mb-2"><PieChart size={24} className="opacity-20 text-white/30"/></div>
-      <span className="text-sm">No expenses yet</span>
+      <span className="text-xs md:text-sm">No expenses yet</span>
     </div>
   );
 
@@ -206,8 +206,8 @@ const DonutChart = ({ data }) => {
   const colors = ['#6366F1', '#8B5CF6', '#EC4899', '#F43F5E', '#F59E0B', '#10B981', '#3B82F6'];
 
   return (
-    <div className="flex flex-col items-center">
-      <div className="relative w-52 h-52">
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative w-40 h-40 md:w-52 md:h-52">
         <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90">
           {data.map((slice, i) => {
             const sliceAngle = (slice.value / total) * 360;
@@ -245,17 +245,17 @@ const DonutChart = ({ data }) => {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
           <span className="text-xs text-white/70 font-medium uppercase tracking-wider">Total</span>
-          <span className="text-xl font-bold text-white">₹{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+          <span className="text-lg md:text-xl font-bold text-white">₹{total.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
         </div>
       </div>
-      <div className="grid grid-cols-1 gap-y-2 mt-6 w-full max-w-xs">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2 gap-x-3 w-full">
         {data.slice(0, 6).map((item, i) => (
-          <div key={item.name} className="flex items-center justify-between text-sm">
-            <div className="flex items-center gap-3">
-              <span className="w-3 h-3 rounded-full ring-1 ring-white/10" style={{ backgroundColor: colors[i % colors.length] }}></span>
-              <span className="text-white font-medium truncate max-w-[160px]">{item.name}</span>
+          <div key={item.name} className="flex items-center justify-between text-xs md:text-sm">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 md:w-3 md:h-3 rounded-full ring-1 ring-white/10" style={{ backgroundColor: colors[i % colors.length] }}></span>
+              <span className="text-white font-medium truncate">{item.name}</span>
             </div>
-            <div className="flex items-baseline gap-3">
+            <div className="flex items-baseline gap-2">
               <span className="font-semibold text-white">₹{item.value.toFixed(2)}</span>
               <span className="text-white/60 text-xs">{Math.round((item.value / total) * 100)}%</span>
             </div>
@@ -628,65 +628,243 @@ const App = () => {
 
   const exportPDF = async () => {
     if (filteredExpenses.length === 0) return console.log('No data to export');
-    // Dynamically import to avoid bundler issues if package missing
     const { jsPDF } = await import('jspdf');
     await import('jspdf-autotable');
 
-    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
-    // Use a standard font (Helvetica) and ASCII-only number formatting to avoid glyph issues
-    doc.setFont('Helvetica');
-    const title = 'FinTrack - Expense Report';
-    const rangeLabel = timeFilter === 'all' ? 'All time' : `${timeFilter} days`;
-    doc.setFontSize(16);
-    doc.text(title, 40, 50);
-    doc.setFontSize(11);
-    doc.text(`Range: ${rangeLabel}`, 40, 70);
-    doc.text(`Generated: ${new Date().toLocaleString()}`, 40, 86);
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const pageHeight = doc.internal.pageSize.getHeight();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    let yPosition = 15;
 
+    // Helper for currency formatting
     const fmt = (n) => {
       if (n == null || isNaN(n)) return '0.00';
-      // plain ASCII thousands separator with 2 decimals
       return n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
     };
 
-    // Totals (use 'Rs' prefix instead of rupee glyph to avoid missing-glyph issues)
-    doc.setFontSize(12);
-    doc.text(`Total Income: Rs ${fmt(totalIncome)}`, 40, 110);
-    doc.text(`Total Expense: Rs ${fmt(totalExpense)}`, 240, 110);
-    doc.text(`Net: Rs ${fmt(balance)}`, 440, 110);
+    // ===== HEADER SECTION =====
+    // Background color for header
+    doc.setFillColor(75, 85, 99); // Dark slate background
+    doc.rect(0, 0, pageWidth, 30, 'F');
 
-    // Category table
-    const catRows = categoryData.map(c => [c.name, `Rs ${fmt(c.value)}`]);
-    // @ts-ignore - autotable attaches to doc
+    // Title
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(24);
+    doc.setTextColor(255, 255, 255);
+    doc.text('FinTrack', 15, 12);
+    doc.setFontSize(10);
+    doc.text('Financial Report', 15, 20);
+
+    // Date and Range info on right side
+    doc.setFontSize(9);
+    const rangeLabel = timeFilter === 'all' ? 'All Time' : `Last ${timeFilter} Days`;
+    const generatedDate = new Date().toLocaleDateString('en-IN', { year: 'numeric', month: 'short', day: 'numeric' });
+    doc.text(`Range: ${rangeLabel}`, pageWidth - 60, 12);
+    doc.text(`Generated: ${generatedDate}`, pageWidth - 60, 20);
+
+    yPosition = 35;
+
+    // ===== SUMMARY CARDS SECTION =====
+    doc.setTextColor(0, 0, 0);
+    const cardWidth = (pageWidth - 20 - 10) / 3;
+    const cardHeight = 22;
+    const cardY = yPosition;
+
+    // Income Card
+    doc.setFillColor(34, 197, 94); // Emerald green
+    doc.rect(10, cardY, cardWidth, cardHeight, 'F');
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(10);
+    doc.setTextColor(255, 255, 255);
+    doc.text('Total Income', 12, cardY + 7);
+    doc.setFontSize(14);
+    doc.text(`₹ ${fmt(totalIncome)}`, 12, cardY + 17);
+
+    // Expense Card
+    doc.setFillColor(239, 68, 68); // Red
+    doc.rect(10 + cardWidth + 5, cardY, cardWidth, cardHeight, 'F');
+    doc.setFontSize(10);
+    doc.text('Total Expense', 12 + cardWidth + 5, cardY + 7);
+    doc.setFontSize(14);
+    doc.text(`₹ ${fmt(totalExpense)}`, 12 + cardWidth + 5, cardY + 17);
+
+    // Balance Card
+    doc.setFillColor(59, 130, 246); // Blue
+    doc.rect(10 + 2 * (cardWidth + 5), cardY, cardWidth, cardHeight, 'F');
+    doc.setFontSize(10);
+    doc.text('Net Balance', 12 + 2 * (cardWidth + 5), cardY + 7);
+    doc.setFontSize(14);
+    doc.setTextColor(balance >= 0 ? 34 : 239, balance >= 0 ? 197 : 68, balance >= 0 ? 94 : 68);
+    doc.text(`₹ ${fmt(balance)}`, 12 + 2 * (cardWidth + 5), cardY + 17);
+
+    yPosition += cardHeight + 12;
+
+    // ===== CATEGORY BREAKDOWN SECTION =====
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Category Breakdown', 15, yPosition);
+    yPosition += 8;
+
+    // Category table with better styling
+    const catRows = categoryData.map(c => [c.name, `₹ ${fmt(c.value)}`]);
     doc.autoTable({
       head: [['Category', 'Amount']],
       body: catRows,
-      startY: 130,
-      styles: { fontSize: 10 }
+      startY: yPosition,
+      margin: { left: 15, right: 15 },
+      styles: {
+        font: 'Helvetica',
+        fontSize: 9,
+        cellPadding: 4,
+        textColor: [0, 0, 0],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.3
+      },
+      headStyles: {
+        fillColor: [99, 102, 241], // Indigo
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      alternateRowStyles: {
+        fillColor: [245, 245, 245]
+      },
+      columnStyles: {
+        1: { halign: 'right' }
+      }
     });
 
-    // Transactions table - place after categories
-    const afterCats = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 250;
-    const txRows = filteredExpenses.map(e => [formatDate(e.date), e.type.toUpperCase(), e.category || '-', `Rs ${fmt(e.amount)}`, e.description || '']);
+    yPosition = doc.lastAutoTable.finalY + 12;
+
+    // ===== DETAILED TRANSACTIONS SECTION =====
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Transaction Details', 15, yPosition);
+    yPosition += 8;
+
+    // Transactions table with comprehensive details
+    const txRows = filteredExpenses.map(e => [
+      formatDate(e.date),
+      e.type === 'income' ? 'Income' : 'Expense',
+      e.category || '-',
+      `₹ ${fmt(e.amount)}`,
+      e.description || '-'
+    ]);
+
     doc.autoTable({
-      head: [['Date','Type','Category','Amount','Description']],
+      head: [['Date', 'Type', 'Category', 'Amount', 'Description']],
       body: txRows,
-      startY: afterCats,
-      styles: { fontSize: 9 },
-      columnStyles: { 4: { cellWidth: 160 } }
+      startY: yPosition,
+      margin: { left: 15, right: 15 },
+      styles: {
+        font: 'Helvetica',
+        fontSize: 8,
+        cellPadding: 3,
+        textColor: [0, 0, 0],
+        lineColor: [220, 220, 220],
+        lineWidth: 0.2
+      },
+      headStyles: {
+        fillColor: [99, 102, 241], // Indigo
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      alternateRowStyles: {
+        fillColor: [248, 248, 248]
+      },
+      columnStyles: {
+        0: { cellWidth: 20 }, // Date
+        1: { cellWidth: 20 }, // Type
+        2: { cellWidth: 25 }, // Category
+        3: { cellWidth: 25, halign: 'right' }, // Amount
+        4: { cellWidth: 'auto' } // Description
+      },
+      didDrawCell: function(data) {
+        // Color code the Type column
+        if (data.column.index === 1 && data.row.index >= 0) {
+          const text = data.cell.text[0];
+          if (text === 'Income') {
+            data.cell.styles.textColor = [34, 197, 94]; // Green
+            data.cell.styles.fontStyle = 'bold';
+          } else if (text === 'Expense') {
+            data.cell.styles.textColor = [239, 68, 68]; // Red
+            data.cell.styles.fontStyle = 'bold';
+          }
+        }
+      },
+      willDrawPage: function(data) {
+        // Page numbers at bottom
+        const pageSize = doc.internal.pageSize;
+        const pageHeight = pageSize.getHeight();
+        const pageWidth = pageSize.getWidth();
+        doc.setFontSize(8);
+        doc.setTextColor(128, 128, 128);
+        doc.text('FinTrack Report', 15, pageHeight - 10);
+        doc.text(`Page ${data.pageNumber}`, pageWidth - 25, pageHeight - 10);
+      }
     });
 
-    // Footer with user attribution (use signed-in user's name/email when available,
-    // otherwise fall back to the app name so developer name isn't shown for others)
-    const pageHeight = doc.internal.pageSize.getHeight();
-    doc.setFontSize(9);
-    const footerName = (user && !String(user.uid).startsWith('local_'))
-      ? (user.displayName || user.email || `user:${String(user.uid).slice(0,6)}`)
-      : 'FinTrack';
-    doc.text(`Generated by ${footerName}`, 40, pageHeight - 30);
-    doc.text(`fintrack - ${new Date().toLocaleDateString()}`, 400, pageHeight - 30);
+    // ===== SUMMARY STATISTICS SECTION =====
+    yPosition = doc.lastAutoTable.finalY + 12;
 
-    doc.save(`fintrack_report_${timeFilter}.pdf`);
+    // Check if we need a new page
+    if (yPosition > pageHeight - 40) {
+      doc.addPage();
+      yPosition = 15;
+    }
+
+    doc.setFont('Helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.setTextColor(0, 0, 0);
+    doc.text('Summary Statistics', 15, yPosition);
+    yPosition += 8;
+
+    // Statistics in a nice format
+    const stats = [
+      ['Total Transactions', filteredExpenses.length.toString()],
+      ['Average Transaction', filteredExpenses.length > 0 ? `₹ ${fmt(filteredExpenses.reduce((a, e) => a + e.amount, 0) / filteredExpenses.length)}` : '₹ 0.00'],
+      ['Highest Income', totalIncome > 0 ? `₹ ${fmt(Math.max(...filteredExpenses.filter(e => e.type === 'income').map(e => e.amount) || [0]))}` : 'N/A'],
+      ['Highest Expense', totalExpense > 0 ? `₹ ${fmt(Math.max(...filteredExpenses.filter(e => e.type === 'expense').map(e => e.amount) || [0]))}` : 'N/A'],
+      ['Savings Rate', totalIncome > 0 ? `${((balance / totalIncome) * 100).toFixed(1)}%` : 'N/A']
+    ];
+
+    doc.autoTable({
+      body: stats,
+      startY: yPosition,
+      margin: { left: 15, right: 15 },
+      styles: {
+        font: 'Helvetica',
+        fontSize: 9,
+        cellPadding: 4,
+        textColor: [0, 0, 0],
+        lineColor: [200, 200, 200],
+        lineWidth: 0.3
+      },
+      columnStyles: {
+        0: { fontStyle: 'bold', cellWidth: 80, fillColor: [245, 245, 245] },
+        1: { halign: 'right', cellWidth: 'auto' }
+      }
+    });
+
+    // ===== FOOTER SECTION =====
+    doc.setFont('Helvetica', 'italic');
+    doc.setFontSize(8);
+    doc.setTextColor(100, 100, 100);
+    const footerName = (user && !String(user.uid).startsWith('local_'))
+      ? (user.displayName || user.email || `user:${String(user.uid).slice(0, 6)}`)
+      : 'FinTrack User';
+    const finalY = doc.lastAutoTable.finalY + 15;
+    if (finalY < pageHeight - 20) {
+      doc.text(`Generated by: ${footerName}`, 15, finalY);
+      doc.text(`Report Date: ${new Date().toLocaleString('en-IN')}`, 15, finalY + 5);
+      doc.text('This is an automated financial report generated by FinTrack', 15, finalY + 10);
+    }
+
+    // Save with timestamp
+    const timestamp = new Date().toISOString().slice(0, 10);
+    doc.save(`FinTrack_Report_${rangeLabel.replace(/\s+/g, '_')}_${timestamp}.pdf`);
   };
 
   // --- Auth Helpers for Interactive Sign-in ---
@@ -733,50 +911,54 @@ const App = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-purple-900 flex flex-col md:flex-row font-sans text-white">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-purple-950 to-slate-900 flex flex-col md:flex-row font-sans text-white overflow-hidden">
       
+      {/* --- Animated Background Effects --- */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse"></div>
+        <div className="absolute bottom-0 left-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl animate-pulse" style={{ animationDelay: '1s' }}></div>
+      </div>
+
       {/* --- Sidebar (Desktop) --- */}
-      <aside className="hidden md:flex flex-col w-48 lg:w-64 bg-gradient-to-b from-indigo-600 via-purple-600 to-indigo-700 fixed md:relative h-full z-20 shadow-2xl">
-        <div className="p-4 lg:p-6 flex items-center gap-2 lg:gap-3 text-white font-bold text-xl lg:text-2xl tracking-tight">
-          <div className="bg-white/20 backdrop-blur-sm p-2 lg:p-2.5 rounded-lg border border-white/30">
-            <WalletCards size={24} className="lg:w-7 lg:h-7" />
+      <aside className="hidden md:flex flex-col w-60 lg:w-72 bg-gradient-to-b from-purple-900/40 via-purple-800/20 to-indigo-900/40 fixed md:relative h-full z-20 shadow-2xl overflow-y-auto border-r border-white/10 backdrop-blur-xl">
+        <div className="p-4 lg:p-6 flex items-center gap-3 text-white font-bold text-lg lg:text-xl tracking-tight sticky top-0 bg-gradient-to-b from-purple-900/60 to-transparent">
+          <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2.5 rounded-xl border border-white/20 flex-shrink-0 shadow-lg">
+            <WalletCards size={24} />
           </div>
-          <span className="text-base lg:text-base">FinTrack</span>
+          <span>FinTrack</span>
         </div>
         
-        <nav className="flex-1 px-3 lg:px-4 space-y-1 lg:space-y-2 mt-4 lg:mt-6">
-          <button onClick={() => setView('dashboard')} className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3.5 rounded-xl transition-all font-medium text-sm lg:text-base min-h-touch ${view === 'dashboard' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
-            <LayoutDashboard size={20} /> <span className="hidden lg:inline">Dashboard</span>
+        <nav className="flex-1 px-3 lg:px-4 space-y-2 mt-6">
+          <button onClick={() => setView('dashboard')} className={`w-full flex items-center gap-3 px-4 py-3 lg:py-4 rounded-2xl transition-all font-semibold text-sm lg:text-base min-h-[48px] ${view === 'dashboard' ? 'bg-gradient-to-r from-purple-600/80 to-indigo-600/60 text-white backdrop-blur-sm border border-white/30 shadow-xl' : 'text-indigo-100 hover:bg-white/10 hover:text-white hover:border-white/20'}`}>
+            <LayoutDashboard size={20} /> <span>Dashboard</span>
           </button>
-          <button onClick={() => setView('add')} className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3.5 rounded-xl transition-all font-medium text-sm lg:text-base min-h-touch ${view === 'add' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
-            <PlusCircle size={20} /> <span className="hidden lg:inline">Add</span>
+          <button onClick={() => setView('add')} className={`w-full flex items-center gap-3 px-4 py-3 lg:py-4 rounded-2xl transition-all font-semibold text-sm lg:text-base min-h-[48px] ${view === 'add' ? 'bg-gradient-to-r from-purple-600/80 to-indigo-600/60 text-white backdrop-blur-sm border border-white/30 shadow-xl' : 'text-indigo-100 hover:bg-white/10 hover:text-white hover:border-white/20'}`}>
+            <PlusCircle size={20} /> <span>Add Expense</span>
           </button>
-          <button onClick={() => setView('history')} className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3.5 rounded-xl transition-all font-medium text-sm lg:text-base min-h-touch ${view === 'history' ? 'bg-white/20 text-white backdrop-blur-sm border border-white/30 shadow-lg' : 'text-indigo-100 hover:bg-white/10 hover:text-white'}`}>
-            <History size={20} /> <span className="hidden lg:inline">History</span>
+          <button onClick={() => setView('history')} className={`w-full flex items-center gap-3 px-4 py-3 lg:py-4 rounded-2xl transition-all font-semibold text-sm lg:text-base min-h-[48px] ${view === 'history' ? 'bg-gradient-to-r from-purple-600/80 to-indigo-600/60 text-white backdrop-blur-sm border border-white/30 shadow-xl' : 'text-indigo-100 hover:bg-white/10 hover:text-white hover:border-white/20'}`}>
+            <History size={20} /> <span>History</span>
           </button>
         </nav>
 
-        <div className="p-4 lg:p-6 border-t border-white/20">
-           {/* Mini Stats in Sidebar */}
+        <div className="p-4 lg:p-6 border-t border-white/10 sticky bottom-0 bg-gradient-to-b from-transparent to-purple-900/40">
            <div className="space-y-4">
-               <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 text-white border border-white/20 shadow-lg">
-                <div className="flex items-start justify-between">
-                    <div>
-                <p className="text-indigo-100 text-xs font-medium uppercase tracking-wide mb-1">Net Balance</p>
-                <h3 className="text-2xl font-bold">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
+               <div className="bg-gradient-to-br from-purple-600/30 to-indigo-600/20 backdrop-blur-md rounded-3xl p-4 text-white border border-white/30 shadow-xl hover:shadow-2xl transition-all hover:border-white/50">
+                <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                <p className="text-indigo-200 text-xs font-semibold uppercase tracking-wide mb-1">Net Balance</p>
+                <h3 className="text-xl lg:text-2xl font-bold bg-gradient-to-r from-emerald-300 to-cyan-300 bg-clip-text text-transparent break-words">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h3>
                     </div>
-                    <div className="bg-white/20 p-2 rounded-lg">
-                        <CreditCard size={16} className="text-white"/>
+                    <div className="bg-gradient-to-br from-purple-500 to-indigo-600 p-2.5 rounded-lg flex-shrink-0 shadow-lg">
+                        <CreditCard size={18} className="text-white"/>
                     </div>
                 </div>
-            <div className="mt-3 pt-3 border-t border-white/20 flex items-center justify-between gap-2 text-sm">
-              <div className="text-white/70">Income: <span className="font-semibold text-emerald-300">₹{totalIncome.toLocaleString()}</span></div>
-              <div className="text-white/70">Expense: <span className="font-semibold text-rose-300">₹{totalExpense.toLocaleString()}</span></div>
+            <div className="mt-3 pt-3 border-t border-white/20 grid grid-cols-2 gap-2 text-xs">
+              <div className="text-white/70"><span className="font-bold text-emerald-300 block">₹{totalIncome.toLocaleString()}</span><span className="text-white/60 text-xs">Income</span></div>
+              <div className="text-white/70"><span className="font-bold text-rose-300 block">₹{totalExpense.toLocaleString()}</span><span className="text-white/60 text-xs">Expense</span></div>
             </div>
             <div className="mt-3 pt-3 border-t border-white/20 flex gap-2">
-              <button onClick={() => exportData('csv')} className="text-xs text-indigo-100 hover:text-white flex items-center gap-1 transition-colors"><FileSpreadsheet size={12}/> CSV</button>
-              <div className="w-px h-3 bg-white/30 self-center"></div>
-              <button onClick={exportPDF} className="text-xs text-indigo-100 hover:text-white flex items-center gap-1 transition-colors"><FileJson size={12}/> PDF</button>
+              <button onClick={() => exportData('csv')} className="text-xs text-indigo-200 hover:text-emerald-300 flex items-center gap-1 transition-colors flex-1 justify-center font-semibold"><FileSpreadsheet size={14}/> CSV</button>
+              <button onClick={exportPDF} className="text-xs text-indigo-200 hover:text-rose-300 flex items-center gap-1 transition-colors flex-1 justify-center font-semibold"><FileJson size={14}/> PDF</button>
             </div>
               </div>
            </div>
@@ -784,16 +966,27 @@ const App = () => {
       </aside>
 
       {/* --- Main Content --- */}
-      <main className="flex-1 md:ml-48 lg:ml-64 pb-24 md:pb-6">
+      <main className="flex-1 w-full md:w-auto md:ml-60 lg:ml-72 pb-28 md:pb-8 flex flex-col relative z-10">
         {/* Header (Mobile & Desktop) */}
-        <header className="sticky top-0 z-10 bg-white/10 backdrop-blur-xl border-b border-white/20 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 shadow-lg">
-            <h1 className="text-xl sm:text-2xl font-bold text-white capitalize">{view === 'add' ? 'Add New Expense' : view === 'history' ? 'Transactions' : 'Dashboard'}</h1>
-            
-            {/* Time Filter Toggle */}
-            {view !== 'add' && (
-                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3 w-full sm:w-auto">
-                    <div className="flex bg-white/10 backdrop-blur-sm p-1 rounded-lg border border-white/20">
+        <header className="sticky top-0 z-10 bg-gradient-to-b from-slate-900/80 via-purple-900/40 to-transparent backdrop-blur-2xl border-b border-white/10 px-4 md:px-6 lg:px-8 py-3 md:py-4 shadow-2xl">
+            <div className="flex flex-col gap-3">
+              <div className="flex justify-between items-center">
+                <h1 className="text-lg md:text-2xl lg:text-3xl font-bold text-white capitalize bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">{view === 'add' ? 'Add New Expense' : view === 'history' ? 'Transactions' : 'Dashboard'}</h1>
+                
+                {/* Auth Controls */}
+                <div className="flex items-center gap-2 md:gap-3">
+                  {user && !String(user.uid).startsWith('local_') ? (
+                    <button onClick={handleSignOut} className="px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold bg-gradient-to-r from-red-500/30 to-rose-500/30 hover:from-red-500/50 hover:to-rose-500/50 text-red-100 border border-red-500/40 transition-all hover:shadow-lg min-h-[44px] flex items-center">Sign out</button>
+                  ) : (
+                    <button onClick={handleGoogleSignIn} className="px-3 md:px-4 py-1.5 md:py-2 rounded-lg text-xs md:text-sm font-semibold bg-gradient-to-r from-blue-500/30 to-cyan-500/30 hover:from-blue-500/50 hover:to-cyan-500/50 text-blue-100 border border-blue-500/40 transition-all hover:shadow-lg min-h-[44px] flex items-center">Sign in</button>
+                  )}
+                </div>
+              </div>
 
+              {/* Time Filter Toggle */}
+              {view !== 'add' && (
+                <div className="flex flex-col md:flex-row items-start md:items-center gap-2 md:gap-3">
+                    <div className="flex bg-white/8 backdrop-blur-md p-1 rounded-2xl border border-white/20 overflow-x-auto shadow-lg">
                         {['1','7', '30','custom', 'all'].map((t) => (
                             <button
                                 key={t}
@@ -801,60 +994,41 @@ const App = () => {
                                   setTimeFilter(t);
                                   if (t !== 'custom') setActiveFilter({ type: t });
                                 }}
-                                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all ${timeFilter === t ? 'bg-indigo-600/80 text-white shadow-lg border border-indigo-400' : 'text-white/70 hover:text-white hover:bg-white/10'}`}
+                                className={`px-2 md:px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap min-h-[44px] flex items-center ${timeFilter === t ? 'bg-gradient-to-r from-purple-600/90 to-indigo-600/90 text-white shadow-lg border border-white/30' : 'text-white/60 hover:text-white hover:bg-white/10'}`}
                             >
-                                {t === 'all' ? 'All' : t === 'custom' ? 'Custom' : t === '1' ? 'Today' : `${t} Days`}
+                                {t === 'all' ? 'All' : t === 'custom' ? 'Custom' : t === '1' ? 'Today' : `${t}d`}
                             </button>
                         ))}
                     </div>
 
                     {timeFilter === 'custom' && (
-                      <div className="inline-flex items-center bg-white/6 p-2 rounded-lg gap-2">
-                        <label className="text-xs text-white/60">From</label>
-                        <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="bg-transparent border border-white/20 px-2 py-1 rounded-md text-sm text-white" />
-                        <label className="text-xs text-white/60">To</label>
-                        <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="bg-transparent border border-white/20 px-2 py-1 rounded-md text-sm text-white" />
-                        <button onClick={() => {
-                          if (customStart && customEnd) {
-                            // apply the custom range
-                            setActiveFilter({ type: 'custom', start: customStart, end: customEnd });
-                            // keep the UI showing 'custom' selected
-                            setTimeFilter('custom');
-                          } else {
-                            alert('Select both start and end dates');
-                          }
-                        }} className="px-3 py-1 rounded-md text-xs bg-indigo-600">Apply</button>
-                        <button onClick={() => { setCustomStart(''); setCustomEnd(''); setTimeFilter('30'); setActiveFilter({ type: '30' }); }} className="px-2 py-1 rounded-md text-xs bg-white/10">Clear</button>
+                      <div className="inline-flex flex-col md:flex-row items-start md:items-center bg-white/8 p-2 rounded-2xl gap-2 w-full md:w-auto border border-white/20 backdrop-blur-md">
+                        <label className="text-xs text-white/60 font-semibold">From</label>
+                        <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)} className="bg-white/10 border border-white/30 px-2 py-1 rounded-lg text-sm text-white min-h-[44px] w-full md:w-auto focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 outline-none" />
+                        <label className="text-xs text-white/60 font-semibold">To</label>
+                        <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)} className="bg-white/10 border border-white/30 px-2 py-1 rounded-lg text-sm text-white min-h-[44px] w-full md:w-auto focus:border-purple-400 focus:ring-2 focus:ring-purple-400/30 outline-none" />
+                        <div className="flex gap-2 w-full md:w-auto">
+                          <button onClick={() => {
+                            if (customStart && customEnd) {
+                              setActiveFilter({ type: 'custom', start: customStart, end: customEnd });
+                              setTimeFilter('custom');
+                            } else {
+                              alert('Select both start and end dates');
+                            }
+                          }} className="px-3 py-1 rounded-lg text-xs font-bold bg-gradient-to-r from-purple-600 to-indigo-600 text-white min-h-[44px] flex items-center flex-1 md:flex-none justify-center hover:shadow-lg transition-all">Apply</button>
+                          <button onClick={() => { setCustomStart(''); setCustomEnd(''); setTimeFilter('30'); setActiveFilter({ type: '30' }); }} className="px-3 py-1 rounded-lg text-xs font-bold bg-white/15 text-white min-h-[44px] flex items-center flex-1 md:flex-none justify-center hover:bg-white/25">Clear</button>
+                        </div>
                       </div>
                     )}
-
-                    {/* Active applied filter badge */}
-                    <div>
-                      <span className="text-xs text-white/70">Active:</span>
-                      <span className="ml-2 inline-block px-2 py-0.5 text-xs bg-white/10 rounded-md text-white">
-                        {activeFilter.type === 'all' ? 'All' : activeFilter.type === 'custom' ? `${activeFilter.start || '-'} → ${activeFilter.end || '-'}` : activeFilter.type === '1' ? 'Today' : `${activeFilter.type} Days`}
-                      </span>
-                    </div>
-                </div>
-            )}
-            {/* Auth Controls */}
-            <div className="flex items-center gap-3">
-              {user && !String(user.uid).startsWith('local_') ? (
-                <div className="flex items-center gap-3">
-                  <button onClick={handleSignOut} className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/10 hover:bg-white/20">Sign out</button>
-                </div>
-              ) : (
-                <div>
-                  <button onClick={handleGoogleSignIn} className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/10 hover:bg-white/20">Sign in</button>
                 </div>
               )}
             </div>
         </header>
 
-        <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6">
+        <div className="flex-1 p-3 md:p-6 lg:p-8 max-w-7xl mx-auto w-full space-y-4 md:space-y-6">
 
             {useLocalFallback && (
-              <div className="mb-4 p-3 sm:p-4 rounded-lg bg-yellow-500/20 text-yellow-100 text-center border border-yellow-400 text-xs sm:text-sm">
+              <div className="p-3 md:p-4 rounded-2xl bg-gradient-to-r from-yellow-500/30 to-orange-500/30 text-yellow-100 text-center border border-yellow-500/50 text-xs md:text-sm backdrop-blur-md shadow-lg">
                 ⚠️ Running in Local Mode — Firebase not configured. Data will be stored locally only.
               </div>
             )}
@@ -863,26 +1037,27 @@ const App = () => {
             {view === 'dashboard' && (
                 <>
                     {/* Top Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 px-4 sm:px-6">
-                         <Card className="bg-gradient-to-br from-indigo-600 via-purple-600 to-indigo-700 text-white border-none relative overflow-hidden shadow-lg shadow-indigo-500/30">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={80} className="sm:w-120 sm:h-120" /></div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4 lg:gap-6">
+                         <Card className="bg-gradient-to-br from-purple-600/40 via-violet-600/30 to-indigo-700/40 text-white border-none relative overflow-hidden shadow-2xl hover:shadow-3xl lg:col-span-1 group">
+                            <div className="absolute top-0 right-0 p-4 md:p-6 opacity-5 group-hover:opacity-10 transition-all"><TrendingUp size={100} /></div>
+                            <div className="absolute -top-20 -right-20 w-40 h-40 bg-purple-500/20 rounded-full blur-3xl group-hover:blur-2xl transition-all"></div>
                             <div className="relative z-10">
-                                <p className="text-indigo-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><Filter size={14}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter}d`}</p>
-                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
-                                <p className="text-indigo-200 text-xs sm:text-sm mt-4 flex items-center gap-1">
-                                    <ArrowUpRight size={16}/> {filteredExpenses.length} txns
+                                <p className="text-indigo-100 font-bold mb-2 flex items-center gap-2 text-xs md:text-sm"><Filter size={14}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter}d`}</p>
+                                <h2 className="text-2xl md:text-3xl lg:text-4xl font-bold tracking-tight bg-gradient-to-r from-emerald-200 to-cyan-200 bg-clip-text text-transparent break-words">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                <p className="text-indigo-200 text-xs md:text-sm mt-4 flex items-center gap-1">
+                                    <ArrowUpRight size={16}/> {filteredExpenses.length} transactions
                                 </p>
                             </div>
                          </Card>
 
                         {/* Trend Chart Card */}
-                         <Card className="md:col-span-2 flex flex-col justify-between">
-                            <div className="flex justify-between items-center mb-2">
-                                <h3 className="font-bold text-white flex items-center gap-2"><TrendingUp size={18} className="text-indigo-300"/> Spending Trend</h3>
+                         <Card className="md:col-span-1 lg:col-span-2 flex flex-col justify-between group">
+                            <div className="flex justify-between items-center mb-2 md:mb-4">
+                                <h3 className="font-bold text-white flex items-center gap-2 text-sm md:text-base bg-gradient-to-r from-violet-300 to-indigo-300 bg-clip-text text-transparent"><TrendingUp size={18} className="text-violet-300"/> Spending Trend</h3>
                             </div>
                             {timeFilter === 'all' ? (
-                                <div className="h-48 flex items-center justify-center text-white/60 bg-white/5 rounded-xl border border-dashed border-white/20">
-                                    Select '7 Days' or '30 Days' to see daily trends
+                                <div className="h-40 md:h-48 flex items-center justify-center text-white/60 bg-white/5 rounded-2xl border border-dashed border-white/20 text-xs md:text-sm font-medium">
+                                    Select a time period to see trends
                                 </div>
                             ) : (
                                 <TrendChart data={dailyTrendData} days={parseInt(timeFilter)} />
@@ -890,38 +1065,38 @@ const App = () => {
                          </Card>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
                         {/* Categories */}
-                        <Card>
-                            <h3 className="font-bold text-white mb-6 flex items-center gap-2"><PieChart size={18} className="text-indigo-300"/> Breakdown</h3>
+                        <Card className="lg:col-span-1 group">
+                            <h3 className="font-bold text-white mb-4 md:mb-6 flex items-center gap-2 text-sm md:text-base bg-gradient-to-r from-violet-300 to-indigo-300 bg-clip-text text-transparent"><PieChart size={18} className="text-violet-300"/> Breakdown</h3>
                             <DonutChart data={categoryData} />
                         </Card>
 
                         {/* Recent Transactions */}
-                        <Card className="lg:col-span-2">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-white flex items-center gap-2"><History size={18} className="text-indigo-300"/> Recent Activity</h3>
-                                <button onClick={() => setView('history')} className="text-indigo-300 text-sm font-medium hover:text-indigo-200">View All</button>
+                        <Card className="lg:col-span-2 group">
+                            <div className="flex justify-between items-center mb-4 md:mb-6">
+                                <h3 className="font-bold text-white flex items-center gap-2 text-sm md:text-base bg-gradient-to-r from-violet-300 to-indigo-300 bg-clip-text text-transparent"><History size={18} className="text-violet-300"/> Recent Activity</h3>
+                                <button onClick={() => setView('history')} className="text-indigo-300 hover:text-emerald-300 text-xs md:text-sm font-semibold hover:scale-110 transition-all">View All →</button>
                             </div>
-                            <div className="space-y-4">
+                            <div className="space-y-2 md:space-y-3">
                                 {filteredExpenses.slice(0, 5).map(item => (
-                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/20">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-indigo-500/30 flex items-center justify-center text-indigo-300 font-bold text-sm">
+                                    <div key={item.id} className="flex items-center justify-between p-3 md:p-4 rounded-2xl hover:bg-white/8 transition-all duration-300 border border-transparent hover:border-white/30 gap-3 min-h-[56px] group/item">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                                            <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-purple-500/50 to-indigo-600/50 flex items-center justify-center text-purple-200 font-bold text-sm flex-shrink-0 border border-white/20 shadow-lg">
                                                 {item.category[0]}
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-white">{item.category}</p>
-                                                <p className="text-xs text-white/60">{formatDate(item.date)}</p>
+                                            <div className="min-w-0">
+                                                <p className="font-bold text-white text-sm truncate">{item.category}</p>
+                                                <p className="text-xs text-white/50">{formatDate(item.date)}</p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                    <p className={`font-bold ${item.type === 'income' ? 'text-emerald-300' : 'text-white'}`}>{item.type === 'income' ? `+₹${item.amount.toFixed(2)}` : `-₹${item.amount.toFixed(2)}`}</p>
-                                            <p className="text-xs text-white/60 truncate max-w-[120px]">{item.description}</p>
+                                        <div className="text-right flex-shrink-0">
+                                    <p className={`font-bold text-sm ${item.type === 'income' ? 'text-emerald-300' : 'text-white'}`}>{item.type === 'income' ? `+₹${item.amount.toFixed(2)}` : `-₹${item.amount.toFixed(2)}`}</p>
+                                            <p className="text-xs text-white/50 truncate max-w-[120px]">{item.description}</p>
                                         </div>
                                     </div>
                                 ))}
-                                {filteredExpenses.length === 0 && <p className="text-white/60 text-center py-8">No transactions found.</p>}
+                                {filteredExpenses.length === 0 && <p className="text-white/60 text-center py-8 text-sm font-medium">No transactions found.</p>}
                             </div>
                         </Card>
                     </div>
@@ -930,16 +1105,16 @@ const App = () => {
 
             {/* --- ADD EXPENSE VIEW --- */}
             {view === 'add' && (
-                 <div className="max-w-xl mx-auto pt-4">
-                    <Card className="border-t-4 border-t-indigo-500">
-                        <form onSubmit={handleAdd} className="space-y-5">
+                 <div className="max-w-2xl mx-auto w-full pt-2 md:pt-4">
+                    <Card className="border-t-4 border-t-purple-500 group">
+                        <form onSubmit={handleAdd} className="space-y-4 md:space-y-5">
                             <div>
-                                <label className="block text-sm font-medium text-white mb-1.5">Amount</label>
+                                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">Amount</label>
                                 <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50">₹</span>
+                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-white/50 text-lg font-bold">₹</span>
                                     <input 
                                         type="number" step="0.01" required 
-                                        className="w-full pl-8 pr-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 focus:bg-white/20 outline-none transition-all font-semibold text-lg text-white placeholder-white/50"
+                                        className="w-full pl-8 pr-4 py-3 md:py-4 bg-gradient-to-br from-white/10 to-white/5 border border-white/30 rounded-2xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 focus:bg-white/15 outline-none transition-all font-semibold text-base md:text-lg text-white placeholder-white/50 min-h-[48px] shadow-lg hover:border-white/40"
                                         placeholder="0.00"
                                         value={formData.amount}
                                         onChange={e => setFormData({...formData, amount: e.target.value})}
@@ -947,22 +1122,22 @@ const App = () => {
                                 </div>
                             </div>
                             <div>
-                              <label className="block text-sm font-medium text-white mb-2.5">Type</label>
-                              <div className="inline-flex rounded-xl bg-white/6 p-1">
-                                <button type="button" onClick={() => handleTypeSelect('expense')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.type === 'expense' ? 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white' : 'text-white/80 hover:bg-white/5'}`}>
-                                  Expense
+                              <label className="block text-xs md:text-sm font-bold text-white mb-2.5 bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">Type</label>
+                              <div className="inline-flex rounded-2xl bg-white/8 p-1 border border-white/20 shadow-lg">
+                                <button type="button" onClick={() => handleTypeSelect('expense')} className={`px-4 md:px-6 py-2 md:py-3 rounded-xl text-sm font-bold transition-all min-h-[44px] ${formData.type === 'expense' ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+                                  💰 Expense
                                 </button>
-                                <button type="button" onClick={() => handleTypeSelect('income')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.type === 'income' ? 'bg-gradient-to-r from-emerald-500 to-emerald-400 text-white' : 'text-white/80 hover:bg-white/5'}`}>
-                                  Income
+                                <button type="button" onClick={() => handleTypeSelect('income')} className={`px-4 md:px-6 py-2 md:py-3 rounded-xl text-sm font-bold transition-all min-h-[44px] ${formData.type === 'income' ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg' : 'text-white/70 hover:bg-white/10 hover:text-white'}`}>
+                                  💵 Income
                                 </button>
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-white mb-1.5">Category</label>
+                                    <label className="block text-xs md:text-sm font-bold text-white mb-1.5 bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">Category</label>
                                     <select 
-                                      className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white"
+                                      className="w-full px-4 py-3 md:py-4 bg-gradient-to-br from-white/10 to-white/5 border border-white/30 rounded-2xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition-all text-white text-sm md:text-base min-h-[48px] shadow-lg hover:border-white/40 font-semibold"
                                       value={formData.category}
                                       onChange={e => setFormData({...formData, category: e.target.value})}
                                       disabled={formData.type === 'income'}
@@ -972,10 +1147,10 @@ const App = () => {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-white mb-1.5">Date</label>
+                                    <label className="block text-xs md:text-sm font-bold text-white mb-1.5 bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">Date</label>
                                     <input 
                                         type="date" required 
-                                        className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white"
+                                        className="w-full px-4 py-3 md:py-4 bg-gradient-to-br from-white/10 to-white/5 border border-white/30 rounded-2xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition-all text-white text-sm md:text-base min-h-[48px] shadow-lg hover:border-white/40 font-semibold"
                                         value={formData.date}
                                         onChange={e => setFormData({...formData, date: e.target.value})}
                                     />
@@ -983,19 +1158,19 @@ const App = () => {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-white mb-1.5">Description <span className="text-white/50">(Optional)</span></label>
+                                <label className="block text-xs md:text-sm font-bold text-white mb-1.5 bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">Description <span className="text-white/50 font-normal">(Optional)</span></label>
                                 <input 
                                     type="text"
-                                    className="w-full px-4 py-3 bg-white/10 border border-white/30 rounded-xl focus:ring-2 focus:ring-indigo-400 outline-none transition-all text-white placeholder-white/50"
-                                    placeholder="Dinner at Joe's..."
+                                    className="w-full px-4 py-3 md:py-4 bg-gradient-to-br from-white/10 to-white/5 border border-white/30 rounded-2xl focus:ring-2 focus:ring-purple-400 focus:border-purple-400 outline-none transition-all text-white placeholder-white/50 text-sm md:text-base min-h-[48px] shadow-lg hover:border-white/40 font-semibold"
+                                    placeholder="Lunch with friends..."
                                     value={formData.description}
                                     onChange={e => setFormData({...formData, description: e.target.value})}
                                 />
                             </div>
 
-                            <div className="pt-2 flex gap-3">
-                                <Button type="button" variant="secondary" onClick={() => setView('dashboard')} className="flex-1">Cancel</Button>
-                                <Button type="submit" className="flex-1 justify-center py-3" disabled={loading}>{loading ? 'Saving...' : 'Save Expense'}</Button>
+                            <div className="pt-4 flex flex-col md:flex-row gap-3 md:gap-4">
+                                <Button type="button" variant="secondary" onClick={() => setView('dashboard')} className="flex-1 min-h-[48px] font-bold">Cancel</Button>
+                                <Button type="submit" className="flex-1 min-h-[48px] font-bold" disabled={loading}>{loading ? '⏳ Saving...' : '✨ Save Expense'}</Button>
                             </div>
                         </form>
                     </Card>
@@ -1004,81 +1179,124 @@ const App = () => {
 
             {/* --- HISTORY VIEW --- */}
             {view === 'history' && (
-                <Card className="overflow-hidden p-0">
-                    <div className="flex justify-end p-4">
-                        <div className="flex space-x-2">
-                             <Button onClick={() => exportData('csv')} variant="ghost" icon={FileSpreadsheet} className="text-xs">Export CSV</Button>
-                             <Button onClick={exportPDF} variant="ghost" icon={FileJson} className="text-xs">Export PDF</Button>
-                        </div>
-                    </div>
-                    <div className="overflow-x-auto">
+                <>
+                  <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-3 pb-4">
+                      <h3 className="font-bold text-white text-lg md:text-xl bg-gradient-to-r from-purple-300 to-indigo-300 bg-clip-text text-transparent">All Transactions</h3>
+                      <div className="flex gap-2 w-full md:w-auto">
+                           <Button onClick={() => exportData('csv')} variant="ghost" icon={FileSpreadsheet} className="text-xs flex-1 md:flex-none min-h-[44px] font-bold">CSV</Button>
+                           <Button onClick={exportPDF} variant="ghost" icon={FileJson} className="text-xs flex-1 md:flex-none min-h-[44px] font-bold">PDF</Button>
+                      </div>
+                  </div>
+                  
+                  <Card className="overflow-hidden p-0 group">
+                    {/* Desktop Table View */}
+                    <div className="hidden md:block overflow-x-auto">
                       <table className="w-full text-left">
-                        <thead className="bg-white/5 border-y border-white/10">
+                        <thead className="bg-gradient-to-r from-purple-600/20 to-indigo-600/20 border-y border-white/20">
                           <tr>
-                            <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Date</th>
-                            <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Category</th>
-                            <th className="min-w-[200px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Description</th>
-                            <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-right">Amount</th>
-                            <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-center">Action</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-white/90 uppercase tracking-wider">Date</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-white/90 uppercase tracking-wider">Category</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-white/90 uppercase tracking-wider">Description</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-white/90 uppercase tracking-wider text-right">Amount</th>
+                            <th className="px-4 md:px-6 py-3 md:py-4 text-xs font-bold text-white/90 uppercase tracking-wider text-center">Action</th>
                           </tr>
                         </thead>
-                            <tbody className="divide-y divide-white/10">
-                                {filteredExpenses.map((expense) => (
-                                    <tr key={expense.id} className="hover:bg-white/5 transition-colors group">
-                                        <td className="px-6 py-4 text-sm text-white whitespace-nowrap">{formatDate(expense.date)}</td>
-                                        <td className="px-6 py-4">
-                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-500/30 text-white">
-                                            {expense.category}
-                                          </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-white/80">{expense.description}</td>
-                                        <td className="px-6 py-4 text-sm font-bold text-white text-right">
-                                          {expense.type === 'income' ? (
-                                            <span className="text-emerald-300">+₹{expense.amount.toFixed(2)}</span>
-                                          ) : (
-                                            <span className="text-white">-₹{expense.amount.toFixed(2)}</span>
-                                          )}
-                                        </td>
-                                        <td className="px-6 py-4 text-center">
-                                          <button 
-                                            onClick={() => handleDelete(expense.id)}
-                                            className="p-2 text-white/70 hover:text-red-400 hover:bg-red-50/10 rounded-lg transition-all"
-                                            title="Delete Transaction"
-                                          >
-                                            <Trash2 size={16} />
-                                          </button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {filteredExpenses.length === 0 && (
-                                    <tr>
-                                        <td colSpan="5" className="px-6 py-10 text-center text-white/60">
-                                            No transactions found for this period.
-                                        </td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
+                        <tbody className="divide-y divide-white/10">
+                            {filteredExpenses.map((expense) => (
+                                <tr key={expense.id} className="hover:bg-white/10 transition-all group/row">
+                                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-white whitespace-nowrap font-semibold">{formatDate(expense.date)}</td>
+                                    <td className="px-4 md:px-6 py-3 md:py-4">
+                                      <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-purple-600/40 to-indigo-600/40 text-white border border-white/30">
+                                        {expense.category}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm text-white/80 max-w-[200px] truncate font-semibold">{expense.description}</td>
+                                    <td className="px-4 md:px-6 py-3 md:py-4 text-sm font-bold text-right">
+                                      {expense.type === 'income' ? (
+                                        <span className="text-emerald-300">+₹{expense.amount.toFixed(2)}</span>
+                                      ) : (
+                                        <span className="text-white">-₹{expense.amount.toFixed(2)}</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 md:px-6 py-3 md:py-4 text-center">
+                                      <button 
+                                        onClick={() => handleDelete(expense.id)}
+                                        className="p-2 text-white/70 hover:text-red-400 hover:bg-red-50/10 rounded-lg transition-all inline-flex items-center justify-center hover:scale-110"
+                                        title="Delete Transaction"
+                                      >
+                                        <Trash2 size={16} />
+                                      </button>
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredExpenses.length === 0 && (
+                                <tr>
+                                    <td colSpan="5" className="px-4 md:px-6 py-8 md:py-10 text-center text-white/60 font-medium">
+                                        No transactions found for this period.
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                      </table>
                     </div>
-                </Card>
+
+                    {/* Mobile Card View */}
+                    <div className="md:hidden p-4 space-y-3">
+                      {filteredExpenses.map((expense) => (
+                        <div key={expense.id} className="bg-gradient-to-br from-white/10 to-white/5 rounded-2xl p-4 border border-white/20 hover:border-white/40 transition-all hover:shadow-lg group/card">
+                          <div className="flex justify-between items-start mb-2">
+                            <div className="flex items-center gap-2 flex-1">
+                              <span className="inline-flex items-center justify-center w-8 h-8 rounded-xl bg-gradient-to-br from-purple-500/50 to-indigo-600/50 text-purple-200 font-bold text-sm flex-shrink-0 border border-white/30 shadow-lg">
+                                {expense.category[0]}
+                              </span>
+                              <div className="min-w-0 flex-1">
+                                <p className="font-bold text-white text-sm">{expense.category}</p>
+                                <p className="text-xs text-white/50">{formatDate(expense.date)}</p>
+                              </div>
+                            </div>
+                            <button 
+                              onClick={() => handleDelete(expense.id)}
+                              className="p-2 text-white/70 hover:text-red-400 transition-all flex-shrink-0 hover:scale-110"
+                              title="Delete Transaction"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          </div>
+                          <p className="text-xs text-white/70 mb-2 truncate font-semibold">{expense.description}</p>
+                          <div className="flex justify-between items-center pt-2 border-t border-white/10">
+                            <span className="text-xs text-white/60 font-semibold">Amount</span>
+                            <span className={`font-bold text-sm ${expense.type === 'income' ? 'text-emerald-300' : 'text-white'}`}>
+                              {expense.type === 'income' ? `+₹${expense.amount.toFixed(2)}` : `-₹${expense.amount.toFixed(2)}`}
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                      {filteredExpenses.length === 0 && (
+                        <div className="text-center text-white/60 py-8 font-medium">
+                          No transactions found for this period.
+                        </div>
+                      )}
+                    </div>
+                  </Card>
+                </>
             )}
         </div>
       </main>
 
       {/* --- Mobile Bottom Nav --- */}
-      <nav className="fixed bottom-0 w-full bg-white/10 backdrop-blur-xl border-t border-white/20 flex justify-around p-2 md:hidden z-30 pb-safe">
-        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${view === 'dashboard' ? 'text-indigo-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
-            <LayoutDashboard size={20} />
+      <nav className="fixed bottom-0 left-0 right-0 w-full bg-gradient-to-t from-slate-900/90 to-slate-900/50 backdrop-blur-2xl border-t border-white/20 flex justify-around items-end md:hidden z-30 pb-safe shadow-2xl">
+        <button onClick={() => setView('dashboard')} className={`flex flex-col items-center justify-center gap-1 text-xs font-bold min-h-[60px] flex-1 transition-all ${view === 'dashboard' ? 'text-purple-400 bg-gradient-to-t from-purple-600/20 to-transparent' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+            <LayoutDashboard size={22} />
             <span>Home</span>
         </button>
-        <button onClick={() => setView('add')} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${view === 'add' ? 'text-indigo-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
-            <div className="bg-gradient-to-br from-indigo-600 to-purple-600 text-white p-2 rounded-full -mt-4 shadow-2xl border-4 border-slate-900/50">
-                <PlusCircle size={20} />
+        <button onClick={() => setView('add')} className={`flex flex-col items-center justify-center gap-1 text-xs font-bold flex-1 transition-all relative`}>
+            <div className="bg-gradient-to-br from-purple-600 via-violet-600 to-indigo-600 text-white p-3 rounded-full -mt-7 shadow-2xl border-4 border-slate-950 flex items-center justify-center hover:scale-110 transition-all transform">
+                <PlusCircle size={26} />
             </div>
-            <span>Add</span>
+            <span className="mt-1">Add</span>
         </button>
-        <button onClick={() => setView('history')} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${view === 'history' ? 'text-indigo-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
-            <History size={20} />
+        <button onClick={() => setView('history')} className={`flex flex-col items-center justify-center gap-1 text-xs font-bold min-h-[60px] flex-1 transition-all ${view === 'history' ? 'text-purple-400 bg-gradient-to-t from-purple-600/20 to-transparent' : 'text-white/60 hover:text-white hover:bg-white/5'}`}>
+            <History size={22} />
             <span>History</span>
         </button>
       </nav>
