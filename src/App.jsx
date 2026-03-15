@@ -10,12 +10,25 @@ import {
   WalletCards,
   Filter,
   ArrowUpRight,
+  ArrowDownLeft,
   CreditCard,
   FileJson,
   Settings,
   X,
   Edit2,
-  Plus
+  Plus,
+  Utensils,
+  Car,
+  Home,
+  ShoppingBag,
+  Gamepad2,
+  Heart,
+  Zap,
+  MoreHorizontal,
+  DollarSign,
+  Wallet,
+  Bell,
+  RefreshCw
 } from 'lucide-react';
 import { auth, db } from './firebaseConfig';
 import {
@@ -35,6 +48,60 @@ import {
   serverTimestamp,
   setLogLevel 
 } from 'firebase/firestore';
+// App identifier for local storage keys and artifact paths
+const sanitizedAppId = 'expense-tracker-app';
+const APP_VERSION = '1.0.0';
+
+// Update Notification Component
+const UpdateNotification = ({ onUpdate, onDismiss }) => (
+  <div className="fixed top-0 left-0 right-0 z-50 bg-gradient-to-r from-indigo-600 to-violet-600 text-white px-4 py-3 shadow-lg">
+    <div className="max-w-7xl mx-auto flex items-center justify-between">
+      <div className="flex items-center gap-3">
+        <Bell size={20} className="animate-bounce" />
+        <span className="text-sm font-semibold">A new version is available! Refresh to update.</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={onUpdate}
+          className="flex items-center gap-2 bg-white text-indigo-600 px-3 py-1 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-colors"
+        >
+          <RefreshCw size={16} /> Update
+        </button>
+        <button
+          onClick={onDismiss}
+          className="text-white/80 hover:text-white transition-colors"
+        >
+          <X size={20} />
+        </button>
+      </div>
+    </div>
+  </div>
+);
+
+// Version Display Component
+const VersionBadge = () => (
+  <div className="text-xs text-white/40 flex items-center gap-1">
+    <span>v{APP_VERSION}</span>
+  </div>
+);
+
+// Category Icons & Colors Mapping
+const categoryIconMap = {
+  'Food': { icon: Utensils, color: 'from-orange-400 to-red-500' },
+  'Transport': { icon: Car, color: 'from-blue-400 to-cyan-500' },
+  'Rent': { icon: Home, color: 'from-amber-400 to-orange-500' },
+  'Shopping': { icon: ShoppingBag, color: 'from-pink-400 to-rose-500' },
+  'Entertainment': { icon: Gamepad2, color: 'from-purple-400 to-indigo-500' },
+  'Health': { icon: Heart, color: 'from-red-400 to-pink-500' },
+  'Bills': { icon: Zap, color: 'from-yellow-400 to-orange-500' },
+  'Other': { icon: MoreHorizontal, color: 'from-gray-400 to-slate-500' }
+};
+
+// Get icon and color for category
+const getCategoryIcon = (category) => {
+  return categoryIconMap[category] || categoryIconMap['Other'];
+};
+
 // --- Helper Functions ---
 const formatDate = (dateStr) => {
   if (!dateStr) return '';
@@ -334,6 +401,11 @@ const App = () => {
   // Data State
   const [expenses, setExpenses] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [successMessage, setSuccessMessage] = useState(null);
+  
+  // Update State
+  const [updateAvailable, setUpdateAvailable] = useState(false);
+  const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   
   // Categories State
   const [defaultCategories, setDefaultCategories] = useState([
@@ -367,6 +439,27 @@ const App = () => {
   useEffect(() => {
     localStorage.setItem('fintrack-categories', JSON.stringify(defaultCategories));
   }, [defaultCategories]);
+  
+  // Detect Service Worker Updates
+  useEffect(() => {
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        registrations.forEach(registration => {
+          // Listen for updates
+          registration.addEventListener('updatefound', () => {
+            const newWorker = registration.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                // New service worker is ready
+                setUpdateAvailable(true);
+                setShowUpdateNotification(true);
+              }
+            });
+          });
+        });
+      });
+    }
+  }, []);
   
   // Load saved categories
   useEffect(() => {
@@ -405,6 +498,15 @@ const App = () => {
     }
   };
 
+  // Update Handlers
+  const handleUpdate = () => {
+    window.location.reload();
+  };
+
+  const handleDismissUpdate = () => {
+    setShowUpdateNotification(false);
+  };
+
   // Handle mobile detection and window resize
   useEffect(() => {
     const handleResize = () => {
@@ -426,6 +528,20 @@ const App = () => {
 
   // --- 1. Authentication and Initialization ---
   useEffect(() => {
+    // CRITICAL: Check localStorage FIRST before Firebase listener
+    // This ensures session persists across app close/refresh
+    const persistedUser = localStorage.getItem('fintrack-user');
+    if (persistedUser) {
+      try {
+        const user = JSON.parse(persistedUser);
+        setUser(user);
+        setUseLocalFallback(false);
+        console.log("✓ Session restored from localStorage:", user.email);
+      } catch (e) {
+        console.error('Failed to restore persisted session:', e);
+      }
+    }
+    
     const initAuth = async () => {
         try {
             const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
@@ -444,24 +560,31 @@ const App = () => {
         // Enable local fallback so the UI remains usable without Firebase
         setUseLocalFallback(true);
         // Create a local pseudo-user so other code can operate
-        setUser({ uid: `local_${sanitizedAppId}` });
+        // Only set if no persisted user
+        if (!persistedUser) {
+          setUser({ uid: `local_${sanitizedAppId}` });
+        }
         setLoading(false);
         }
     };
     initAuth();
     
-    // Set up Auth State Listener
+    // Set up Auth State Listener with Session Persistence
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       if (u) {
         console.log("✓ User authenticated:", u.uid);
         setUser(u);
-      } else {
-        console.log("⚠️ No authenticated user");
-        // If auth isn't available, enable local fallback
-        setUseLocalFallback(true);
-        setUser({ uid: `local_${sanitizedAppId}` });
+        // ALWAYS persist to localStorage - this is the key to session persistence
+        localStorage.setItem('fintrack-user', JSON.stringify({
+          uid: u.uid,
+          email: u.email,
+          displayName: u.displayName,
+          photoURL: u.photoURL
+        }));
+        setUseLocalFallback(false);
       }
-      // Stop loading once auth status is known
+      // IMPORTANT: Don't clear user on auth state change - rely on localStorage
+      // This prevents accidental sign-out on refresh
       setLoading(false);
     });
     return () => unsubscribe();
@@ -640,8 +763,13 @@ const App = () => {
         localStorage.setItem(key, JSON.stringify(updated));
         setExpenses(prev => [newItem, ...prev]);
         setFormData({ amount: '', category: 'Food', type: 'expense', description: '', date: new Date().toISOString().split('T')[0] });
+        
+        // Show success feedback
+        const transactionType = formData.type === 'income' ? 'Income' : 'Expense';
+        setSuccessMessage(`✓ ${transactionType} added successfully!`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+        
         setView('dashboard');
-        alert('Expense added locally (Firebase not configured).');
         return;
       }
 
@@ -654,8 +782,13 @@ const App = () => {
       });
       // Reset form and switch view
       setFormData({ amount: '', category: 'Food', type: 'expense', description: '', date: new Date().toISOString().split('T')[0] });
+      
+      // Show success feedback
+      const transactionType = formData.type === 'income' ? 'Income' : 'Expense';
+      setSuccessMessage(`✓ ${transactionType} added successfully!`);
+      setTimeout(() => setSuccessMessage(null), 3000);
+      
       setView('dashboard');
-      alert('Expense added successfully!');
     } catch(e) { 
       console.error("Add failed:", e);
       alert('Error adding expense: ' + e.message);
@@ -802,9 +935,24 @@ const App = () => {
   const handleGoogleSignIn = async () => {
     try {
       const provider = new GoogleAuthProvider();
-      await signInWithPopup(auth, provider);
-      setUseLocalFallback(false);
-      alert('Signed in with Google');
+      const result = await signInWithPopup(auth, provider);
+      
+      if (result.user) {
+        // Persist user data to localStorage for session recovery
+        localStorage.setItem('fintrack-user', JSON.stringify({
+          uid: result.user.uid,
+          email: result.user.email,
+          displayName: result.user.displayName,
+          photoURL: result.user.photoURL
+        }));
+        
+        setUser(result.user);
+        setUseLocalFallback(false);
+        
+        // Show success message
+        setSuccessMessage(`✓ Signed in as ${result.user.displayName || result.user.email}`);
+        setTimeout(() => setSuccessMessage(null), 3000);
+      }
     } catch (err) {
       console.error('Google sign-in failed:', err);
       alert('Google sign-in failed: ' + err.message);
@@ -814,6 +962,8 @@ const App = () => {
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      // Clear persisted user session
+      localStorage.removeItem('fintrack-user');
       setUser(null);
       setUseLocalFallback(true);
       alert('Signed out');
@@ -842,7 +992,16 @@ const App = () => {
   );
 
   return (
-    <div className={`min-h-screen flex flex-col md:flex-row font-sans overflow-x-hidden transition-colors duration-300 ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-cyan-900 to-blue-900 text-white' : 'bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 text-gray-900'}`}>
+    <>
+      {/* Update Notification */}
+      {showUpdateNotification && (
+        <UpdateNotification 
+          onUpdate={handleUpdate} 
+          onDismiss={handleDismissUpdate} 
+        />
+      )}
+      
+      <div className={`min-h-screen flex flex-col md:flex-row font-sans overflow-x-hidden transition-colors duration-300 ${isDarkMode ? 'bg-gradient-to-br from-slate-900 via-cyan-900 to-blue-900 text-white' : 'bg-gradient-to-br from-gray-50 via-blue-50 to-cyan-50 text-gray-900'}`}>
       
       {/* --- Sidebar (Desktop) --- */}
       <aside className={`hidden md:flex flex-col w-48 lg:w-64 fixed md:relative h-full z-20 shadow-2xl transition-all duration-300 ${isDarkMode ? 'bg-gradient-to-b from-cyan-600 via-blue-600 to-cyan-700 text-white' : 'bg-gradient-to-b from-cyan-400 via-blue-400 to-cyan-500 text-white'}`}>
@@ -888,6 +1047,9 @@ const App = () => {
               <div className="w-px h-3 bg-white/30 self-center"></div>
               <button onClick={exportPDF} className="text-xs text-cyan-100 hover:text-white flex items-center gap-1 transition-colors"><FileJson size={12}/> PDF</button>
             </div>
+            <div className="mt-4 pt-3 border-t border-white/20 text-center">
+              <VersionBadge />
+            </div>
               </div>
            </div>
         </div>
@@ -896,35 +1058,49 @@ const App = () => {
       {/* --- Main Content --- */}
       <main className="flex-1 md:ml-48 lg:ml-64 pb-24 md:pb-6 w-full overflow-hidden">
         {/* Header (Mobile & Desktop) */}
-        <header className="sticky top-0 z-10 bg-white/5 backdrop-blur-xl border-b border-white/15 px-4 sm:px-6 py-3 sm:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 sm:gap-0 shadow-lg w-full overflow-hidden">
-            <div className="flex items-center gap-2">
-              <div className="md:hidden bg-white/10 backdrop-blur-sm p-1.5 rounded-lg border border-white/30">
-                <Logo size={22} />
+        <header className="sticky top-0 z-10 bg-white/5 backdrop-blur-xl border-b border-white/15 px-3 sm:px-6 py-2 sm:py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-0 shadow-lg w-full overflow-x-hidden">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="md:hidden bg-white/10 backdrop-blur-sm p-1 rounded-lg border border-white/30 flex-shrink-0">
+                <Logo size={20} />
               </div>
-              <h1 className="text-xl sm:text-2xl font-bold text-white capitalize">{view === 'add' ? 'Add New Transaction' : view === 'history' ? 'Transaction History' : 'Dashboard'}</h1>
+              <h1 className="text-base sm:text-2xl font-bold text-white capitalize truncate">{view === 'add' ? 'Add New' : view === 'history' ? 'History' : 'Dashboard'}</h1>
             </div>
             
             {/* Auth Controls */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              {/* Settings Button */}
+            <div className="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+              {/* Settings Button - Disabled during loading */}
               <button
                 onClick={() => setShowCategoryModal(!showCategoryModal)}
-                className="p-2 rounded-lg border bg-white/10 hover:bg-white/20 border-white/30 hover:border-white/50 transition-all min-h-[40px] min-w-[40px] flex items-center justify-center text-white"
-                title="Manage Categories"
+                disabled={loading}
+                className={`p-1.5 sm:p-2 rounded-lg border transition-all h-9 w-9 sm:h-10 sm:w-10 flex items-center justify-center text-white ${
+                  loading 
+                    ? 'bg-white/5 border-white/20 opacity-50 cursor-not-allowed' 
+                    : 'bg-white/10 hover:bg-white/20 border-white/30 hover:border-white/50'
+                }`}
+                title={loading ? "Saving transaction..." : "Manage Categories"}
               >
-                <Settings size={18} />
+                <Settings size={16} className="sm:w-[18px] sm:h-[18px]" />
               </button>
 
               {/* Divider */}
-              <div className="w-px h-6 bg-white/20"></div>
+              <div className="w-px h-5 bg-white/20"></div>
 
               {user && !String(user.uid).startsWith('local_') ? (
-                <button onClick={handleSignOut} className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/10 hover:bg-white/20 transition-all min-h-[40px]">Sign out</button>
+                <button onClick={handleSignOut} disabled={loading} className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all h-9 sm:h-10 ${loading ? 'bg-white/5 opacity-50 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20'}`}>Sign out</button>
               ) : (
-                <button onClick={handleGoogleSignIn} className="px-3 py-1.5 rounded-md text-xs font-medium bg-white/10 hover:bg-white/20 transition-all min-h-[40px]">Sign in</button>
+                <button onClick={handleGoogleSignIn} disabled={loading} className={`px-2 sm:px-3 py-1.5 rounded-md text-xs font-medium transition-all h-9 sm:h-10 ${loading ? 'bg-white/5 opacity-50 cursor-not-allowed' : 'bg-white/10 hover:bg-white/20'}`}>Sign in</button>
               )}
             </div>
         </header>
+
+        {/* Success Message Toast */}
+        {successMessage && (
+          <div className="fixed top-20 left-1/2 -translate-x-1/2 z-50 animate-pulse px-4">
+            <div className="bg-gradient-to-r from-emerald-500 to-green-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-full shadow-lg border border-emerald-400 text-xs sm:text-sm font-semibold flex items-center gap-2 whitespace-nowrap">
+              {successMessage}
+            </div>
+          </div>
+        )}
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 w-full overflow-x-hidden">
 
@@ -1062,9 +1238,9 @@ const App = () => {
 
                         {/* Income Card */}
                         <Card className="bg-gradient-to-br from-emerald-500 to-green-600 text-white border-none shadow-lg shadow-emerald-500/30">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={80} className="sm:w-120 sm:h-120" /></div>
-                            <div>
-                                <p className="text-emerald-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><ArrowUpRight size={14}/> Income</p>
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><Wallet size={80} className="sm:w-120 sm:h-120" /></div>
+                            <div className="relative z-10">
+                                <p className="text-emerald-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><Wallet size={14}/> Income</p>
                                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">+₹{totalIncome.toLocaleString()}</h2>
                                 <p className="text-emerald-100 text-xs sm:text-sm mt-4">
                                     Total earnings
@@ -1074,9 +1250,9 @@ const App = () => {
 
                         {/* Expense Card */}
                         <Card className="bg-gradient-to-br from-red-500 to-rose-600 text-white border-none shadow-lg shadow-red-500/30">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={80} className="sm:w-120 sm:h-120" /></div>
-                            <div>
-                                <p className="text-red-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><TrendingUp size={14}/> Expenses</p>
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign size={80} className="sm:w-120 sm:h-120" /></div>
+                            <div className="relative z-10">
+                                <p className="text-red-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><DollarSign size={14}/> Expenses</p>
                                 <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">-₹{totalExpense.toLocaleString()}</h2>
                                 <p className="text-red-100 text-xs sm:text-sm mt-4">
                                     Total spending
@@ -1112,24 +1288,37 @@ const App = () => {
                                 <h3 className="font-bold text-white flex items-center gap-2"><History size={18} className="text-cyan-300"/> Recent Activity</h3>
                                 <button onClick={() => setView('history')} className="text-cyan-300 text-sm font-medium hover:text-cyan-200">View All →</button>
                             </div>
-                            <div className="space-y-4">
-                                {filteredExpenses.slice(0, 5).map(item => (
-                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-colors border border-transparent hover:border-white/20">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                                                {item.category[0]}
+                            <div className="space-y-3">
+                                {filteredExpenses.slice(0, 5).map(item => {
+                                  const categoryInfo = getCategoryIcon(item.category);
+                                  const IconComponent = categoryInfo.icon;
+                                  return (
+                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/20">
+                                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                                            <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${categoryInfo.color} flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-lg`}>
+                                                <IconComponent size={22} />
                                             </div>
-                                            <div>
-                                                <p className="font-semibold text-white">{item.category}</p>
-                                                <p className="text-xs text-white/60">{formatDate(item.date)}</p>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="font-semibold text-white text-sm truncate">{item.category}</p>
+                                                <p className="text-xs text-white/50">{formatDate(item.date)} {item.description && `• ${item.description.substring(0, 20)}`}</p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                    <p className={`font-bold ${item.type === 'income' ? 'text-emerald-300' : 'text-white'}`}>{item.type === 'income' ? `+₹${item.amount.toFixed(2)}` : `-₹${item.amount.toFixed(2)}`}</p>
-                                            <p className="text-xs text-white/60 truncate max-w-[120px]">{item.description}</p>
+                                        <div className="text-right flex-shrink-0 ml-2">
+                                    <p className={`font-bold text-sm sm:text-base ${item.type === 'income' ? 'text-emerald-300 flex items-center gap-1' : 'text-red-300 flex items-center gap-1'}`}>
+                                      {item.type === 'income' ? (
+                                        <>
+                                          <ArrowDownLeft size={14} /> +₹{item.amount.toFixed(0)}
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ArrowUpRight size={14} /> -₹{item.amount.toFixed(0)}
+                                        </>
+                                      )}
+                                    </p>
                                         </div>
                                     </div>
-                                ))}
+                                  );
+                                })}
                                 {filteredExpenses.length === 0 && <p className="text-white/60 text-center py-8">No transactions found.</p>}
                             </div>
                         </Card>
@@ -1172,7 +1361,9 @@ const App = () => {
                             </div>
                             
                             <div className="grid grid-cols-2 gap-4">
-                                <div>
+                                {/* Category & Settings Button - ONLY show for EXPENSE */}
+                                {formData.type === 'expense' && (
+                                  <div>
                                     <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Category</label>
                                     <div className="flex items-center gap-2">
                                       <select 
@@ -1183,24 +1374,26 @@ const App = () => {
                                         } disabled:opacity-50`}
                                         value={formData.category}
                                         onChange={e => setFormData({...formData, category: e.target.value})}
-                                        disabled={formData.type === 'income'}
+                                        disabled={loading}
                                       >
-                                        <option value="" disabled className={isDarkMode ? 'text-white/60 bg-slate-900' : 'text-gray-500 bg-white'}>{formData.type === 'income' ? 'Not applicable for income' : 'Select category'}</option>
+                                        <option value="" disabled className={isDarkMode ? 'text-white/60 bg-slate-900' : 'text-gray-500 bg-white'}>Select category</option>
                                         {defaultCategories.map(c => <option key={c} value={c} className={isDarkMode ? 'bg-slate-900' : 'bg-white'}>{c}</option>)}
                                       </select>
                                       <button
                                         onClick={() => setShowCategoryModal(true)}
+                                        disabled={loading}
                                         className={`p-2.5 rounded-lg border transition-all min-h-[40px] min-w-[40px] flex items-center justify-center ${
                                           isDarkMode
                                             ? 'bg-white/10 border-white/30 hover:bg-white/20 text-white/70 hover:text-white'
                                             : 'bg-gray-100 border-gray-300 hover:bg-gray-200 text-gray-600 hover:text-gray-900'
-                                        }`}
-                                        title="Manage Categories"
+                                        } ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        title={loading ? "Saving transaction..." : "Manage Categories"}
                                       >
                                         <Settings size={16} />
                                       </button>
                                     </div>
-                                </div>
+                                  </div>
+                                )}
                                 <div>
                                     <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Date</label>
                                     <input 
@@ -1232,8 +1425,13 @@ const App = () => {
                             </div>
 
                             <div className="pt-2 flex gap-3">
-                                <Button type="button" variant="secondary" onClick={() => setView('dashboard')} className="flex-1">Cancel</Button>
-                                <Button type="submit" className="flex-1 justify-center py-3" disabled={loading}>{loading ? 'Saving...' : 'Save Transaction'}</Button>
+                                <Button type="button" variant="secondary" onClick={() => setView('dashboard')} disabled={loading} className="flex-1">Cancel</Button>
+                                <Button type="submit" className="flex-1 justify-center py-3" disabled={loading}>{loading ? (
+                                  <span className="flex items-center gap-2">
+                                    <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                    Saving...
+                                  </span>
+                                ) : 'Save Transaction'}</Button>
                             </div>
                         </form>
                     </Card>
@@ -1261,23 +1459,35 @@ const App = () => {
                           </tr>
                         </thead>
                             <tbody className="divide-y divide-white/10">
-                                {filteredExpenses.map((expense) => (
+                                {filteredExpenses.map((expense) => {
+                                  const categoryInfo = getCategoryIcon(expense.category);
+                                  const IconComponent = categoryInfo.icon;
+                                  return (
                                     <tr key={expense.id} className="hover:bg-white/5 transition-colors group">
-                                        <td className="px-6 py-4 text-sm text-white whitespace-nowrap">{formatDate(expense.date)}</td>
-                                        <td className="px-6 py-4">
-                                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gradient-to-r from-cyan-500/30 to-blue-500/30 text-cyan-100">
-                                            {expense.category}
-                                          </span>
+                                        <td className="px-3 sm:px-6 py-4 text-sm text-white whitespace-nowrap">{formatDate(expense.date)}</td>
+                                        <td className="px-3 sm:px-6 py-4">
+                                          <div className="flex items-center gap-2">
+                                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${categoryInfo.color} flex items-center justify-center text-white flex-shrink-0`}>
+                                              <IconComponent size={16} />
+                                            </div>
+                                            <span className="inline-flex items-center text-xs font-medium text-white truncate">
+                                              {expense.category}
+                                            </span>
+                                          </div>
                                         </td>
-                                        <td className="px-6 py-4 text-sm text-white/80">{expense.description}</td>
-                                        <td className="px-6 py-4 text-sm font-bold text-white text-right">
+                                        <td className="px-3 sm:px-6 py-4 text-sm text-white/80 truncate max-w-xs">{expense.description || '—'}</td>
+                                        <td className="px-3 sm:px-6 py-4 text-sm font-bold text-right">
                                           {expense.type === 'income' ? (
-                                            <span className="text-emerald-300">+₹{expense.amount.toFixed(2)}</span>
+                                            <span className="text-emerald-300 flex items-center justify-end gap-1">
+                                              <ArrowDownLeft size={14} /> +₹{expense.amount.toFixed(0)}
+                                            </span>
                                           ) : (
-                                            <span className="text-white">-₹{expense.amount.toFixed(2)}</span>
+                                            <span className="text-red-300 flex items-center justify-end gap-1">
+                                              <ArrowUpRight size={14} /> -₹{expense.amount.toFixed(0)}
+                                            </span>
                                           )}
                                         </td>
-                                        <td className="px-6 py-4 text-center">
+                                        <td className="px-3 sm:px-6 py-4 text-center">
                                           <button 
                                             onClick={() => handleDelete(expense.id)}
                                             className="p-2 text-white/70 hover:text-red-400 hover:bg-red-50/10 rounded-lg transition-all"
@@ -1287,7 +1497,8 @@ const App = () => {
                                           </button>
                                         </td>
                                     </tr>
-                                ))}
+                                  );
+                                })}
                                 {filteredExpenses.length === 0 && (
                                     <tr>
                                         <td colSpan="5" className="px-6 py-10 text-center text-white/60">
@@ -1491,6 +1702,8 @@ const App = () => {
         </button>
       </nav>
     </div>
+      </div>
+    </>
   );
 };
 
