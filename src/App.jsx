@@ -28,15 +28,19 @@ import {
   DollarSign,
   Wallet,
   Bell,
-  RefreshCw
+  RefreshCw,
+  Book,
+  ChevronDown
 } from 'lucide-react';
+import { PieChart as RechartsPieChart, Pie, Cell, Tooltip as RechartsTooltip, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { auth, db } from './firebaseConfig';
 import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
   signOut,
-  signInAnonymously
+  signInAnonymously,
+  signInWithCustomToken
 } from 'firebase/auth';
 import { 
   collection, 
@@ -45,8 +49,7 @@ import {
   query, 
   onSnapshot, 
   doc,
-  serverTimestamp,
-  setLogLevel 
+  serverTimestamp
 } from 'firebase/firestore';
 // App identifier for local storage keys and artifact paths
 const sanitizedAppId = 'expense-tracker-app';
@@ -189,7 +192,19 @@ const Button = ({ children, onClick, variant = "primary", className = "", disabl
   );
 };
 
-// User-Friendly Bar Chart for Daily Spending Trends
+const TrendTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-800/90 backdrop-blur-md border border-white/20 p-3 rounded-xl shadow-xl">
+        <p className="text-white/70 text-xs mb-1">{formatDate(label)}</p>
+        <p className="text-cyan-400 font-bold text-sm">₹{payload[0].value.toFixed(2)}</p>
+      </div>
+    );
+  }
+  return null;
+};
+
+// User-Friendly Bar/Area Chart for Daily Spending Trends
 const TrendChart = ({ data, days }) => {
   if (!data || data.length === 0) return <div className="h-56 flex items-center justify-center text-white/60 text-sm">No data for this period</div>;
 
@@ -198,20 +213,15 @@ const TrendChart = ({ data, days }) => {
     const found = data.find(d => d.date === date);
     return { date, value: found ? found.value : 0 };
   });
-  
+
   const values = chartData.map(d => d.value);
-  const maxVal = Math.max(...values, 10);
   const total = values.reduce((a, b) => a + b, 0);
   const avg = total / values.length;
 
-  // Show every 2nd or 3rd date depending on number of days
-  const showEveryN = days > 15 ? 3 : days > 7 ? 2 : 1;
-  
-  // For mobile, make chart scrollable if more than 14 days
-  const isSmallScreen = days > 14;
+
 
   return (
-    <div className="w-full h-56 flex flex-col">
+    <div className="w-full h-[280px] flex flex-col">
       {/* Chart Info Header */}
       <div className="flex justify-between items-center mb-4">
         <div className="text-sm text-white/70">
@@ -219,48 +229,34 @@ const TrendChart = ({ data, days }) => {
         </div>
       </div>
 
-      {/* Bar Chart Container */}
-      <div className={`flex-1 rounded-xl p-4 border border-white/10 bg-white/3 overflow-x-auto ${isSmallScreen ? 'sm:overflow-x-visible' : ''}`}>
-        <div className="flex items-end justify-between gap-1 h-full min-w-full sm:min-w-0">
-          {chartData.map((d, i) => {
-            const height = (d.value / maxVal) * 100 || 2;
-            const isToday = i === chartData.length - 1;
-            const barColor = d.value === 0 ? 'from-white/10 to-white/5' : 'from-cyan-400 to-blue-500';
-            
-            return (
-              <div key={d.date} className="flex flex-col items-center gap-1 flex-1 group min-w-[35px] sm:min-w-0">
-                {/* Bar */}
-                <div 
-                  className={`w-full rounded-t-lg transition-all duration-300 bg-gradient-to-t ${barColor} hover:shadow-lg hover:shadow-cyan-500/50 cursor-pointer group-hover:opacity-100 opacity-90`}
-                  style={{ height: `${height}%`, minHeight: d.value > 0 ? '8px' : '2px' }}
-                  title={`${formatDate(d.date)}: ₹${d.value.toFixed(2)}`}
-                >
-                  {/* Value Label on Hover */}
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity text-xs font-bold text-white text-center translate-y-[-28px] whitespace-nowrap">
-                    ₹{d.value.toFixed(0)}
-                  </div>
-                </div>
-                
-                {/* Date Label */}
-                {i % showEveryN === 0 && (
-                  <span className="text-xs text-white/50 font-medium mt-1 whitespace-nowrap">{formatDate(d.date)}</span>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Legend */}
-      <div className="mt-4 flex items-center justify-center gap-4 text-xs text-white/60">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-sm bg-gradient-to-r from-cyan-400 to-blue-500 rounded-md"></div>
-          <span>Daily Spending</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-sm bg-white/10"></div>
-          <span>No Activity</span>
-        </div>
+      <div className="flex-1 w-full h-full -ml-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <AreaChart data={chartData} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.8}/>
+                <stop offset="95%" stopColor="#06B6D4" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+            <XAxis 
+              dataKey="date" 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+              tickFormatter={(val) => formatDate(val).split(' ')[0]}
+              minTickGap={20}
+            />
+            <YAxis 
+              axisLine={false} 
+              tickLine={false} 
+              tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+              tickFormatter={(val) => `₹${val}`}
+            />
+            <RechartsTooltip content={<TrendTooltip />} cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeWidth: 2, strokeDasharray: '4 4' }} />
+            <Area type="monotone" dataKey="value" stroke="#06B6D4" strokeWidth={3} fillOpacity={1} fill="url(#colorValue)" />
+          </AreaChart>
+        </ResponsiveContainer>
       </div>
     </div>
   );
@@ -277,60 +273,62 @@ const DonutChart = ({ data }) => {
   );
 
   const total = data.reduce((acc, item) => acc + item.value, 0);
-  let currentAngle = 0;
-  const colors = ['#06B6D4', '#0369A1', '#10B981', '#FF6B6B', '#F59E0B', '#EF4444', '#EC4899'];
+  const colors = ['#06B6D4', '#0369A1', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#8B5CF6', '#14B8A6'];
+
+const DonutTooltip = ({ active, payload, total }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="bg-slate-800/90 backdrop-blur-md border border-white/20 p-3 rounded-xl shadow-xl">
+        <p className="text-white font-bold text-sm">{payload[0].name}</p>
+        <p className="text-white/80 text-xs">₹{payload[0].value.toFixed(2)}</p>
+        <p className="text-cyan-400 font-semibold text-xs mt-1">
+          {Math.round((payload[0].value / total) * 100)}%
+        </p>
+      </div>
+    );
+  }
+  return null;
+};
 
   return (
     <div className="flex flex-col items-center space-y-6">
       {/* Donut Chart */}
-      <div className="relative w-56 h-56 group">
-        <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90 drop-shadow-2xl">
-          {/* Background circle */}
-          <circle cx="50" cy="50" r="50" fill="rgba(255,255,255,0.02)" />
-          
-          {data.map((slice, i) => {
-            const sliceAngle = (slice.value / total) * 360;
-            const startAngleRad = (Math.PI * currentAngle) / 180;
-            const endAngleRad = (Math.PI * (currentAngle + sliceAngle)) / 180;
-            
-            const x1 = 50 + 50 * Math.cos(startAngleRad);
-            const y1 = 50 + 50 * Math.sin(startAngleRad);
-            const x2 = 50 + 50 * Math.cos(endAngleRad);
-            const y2 = 50 + 50 * Math.sin(endAngleRad);
-            
-            const largeArcFlag = sliceAngle > 180 ? 1 : 0;
-            const pathData = `M 50 50 L ${x1} ${y1} A 50 50 0 ${largeArcFlag} 1 ${x2} ${y2} Z`;
-            currentAngle += sliceAngle;
-            
-            return (
-              <path 
-                key={slice.name} 
-                d={pathData} 
-                fill={colors[i % colors.length]} 
-                stroke="rgba(255,255,255,0.12)" 
-                strokeWidth="1" 
-                style={{ 
-                  transition: 'all 300ms ease',
-                  transformOrigin: '50% 50%',
-                  filter: `drop-shadow(0 4px 12px ${colors[i % colors.length]}40)`
-                }}
-                className="cursor-pointer hover:brightness-125 hover:drop-shadow-lg"
-              />
-            );
-          })}
-          {/* Inner circle */}
-          <circle cx="50" cy="50" r="36" fill="rgba(15,23,42,0.9)" />
-        </svg>
+      <div className="relative w-full h-64 -mt-4">
+        <ResponsiveContainer width="100%" height="100%">
+          <RechartsPieChart>
+            <Pie
+              data={data}
+              cx="50%"
+              cy="50%"
+              innerRadius={65}
+              outerRadius={85}
+              paddingAngle={5}
+              dataKey="value"
+              stroke="none"
+              animationBegin={0}
+              animationDuration={800}
+            >
+              {data.map((entry, index) => (
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={colors[index % colors.length]} 
+                  style={{ filter: `drop-shadow(0 4px 6px ${colors[index % colors.length]}40)` }}
+                />
+              ))}
+            </Pie>
+            <RechartsTooltip content={(props) => <DonutTooltip {...props} total={total} />} />
+          </RechartsPieChart>
+        </ResponsiveContainer>
         
         {/* Center Info */}
         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-          <span className="text-xs text-white/60 font-semibold uppercase tracking-widest">Total Spending</span>
-          <span className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-cyan-300 to-blue-300 mt-1">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
+          <span className="text-xs text-white/50 font-semibold uppercase tracking-widest mt-1">Total</span>
+          <span className="text-xl font-bold text-white">₹{total.toLocaleString('en-IN', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}</span>
         </div>
       </div>
 
       {/* Enhanced Legend with Bars */}
-      <div className="w-full space-y-3 max-w-sm">
+      <div className="w-full space-y-3 max-w-sm -mt-2">
         {data.slice(0, 6).map((item, i) => {
           const percentage = Math.round((item.value / total) * 100);
           return (
@@ -339,46 +337,29 @@ const DonutChart = ({ data }) => {
                 <div className="flex items-center gap-3 min-w-0">
                   <div className="relative">
                     <span 
-                      className="w-4 h-4 rounded-lg shadow-lg block transition-all group-hover/item:scale-110" 
-                      style={{ backgroundColor: colors[i % colors.length] }}
+                      className="w-3 h-3 rounded-full shadow-lg block transition-all group-hover/item:scale-110" 
+                      style={{ backgroundColor: colors[i % colors.length], boxShadow: `0 0 10px ${colors[i % colors.length]}80` }}
                     ></span>
                   </div>
-                  <span className="text-sm font-semibold text-white truncate">{item.name}</span>
+                  <span className="text-sm font-semibold text-white/90 truncate">{item.name}</span>
                 </div>
-                <span className="text-xs font-bold text-cyan-300 ml-2">{percentage}%</span>
+                <span className="text-xs font-bold text-white/70 ml-2">₹{item.value.toFixed(0)} <span className="text-cyan-400 ml-1">({percentage}%)</span></span>
               </div>
               
               {/* Progress Bar */}
-              <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
+              <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
                 <div 
-                  className="h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r"
+                  className="h-full rounded-full transition-all duration-500 ease-out"
                   style={{
                     width: `${percentage}%`,
-                    backgroundImage: `linear-gradient(to right, ${colors[i % colors.length]}, ${colors[(i + 1) % colors.length]})`
+                    backgroundColor: colors[i % colors.length]
                   }}
                 ></div>
               </div>
-              
-              {/* Amount */}
-              <span className="text-xs text-white/50 mt-1 inline-block">₹{item.value.toFixed(2)}</span>
             </div>
           );
         })}
       </div>
-
-      {/* Summary Stats */}
-      {data.length > 0 && (
-        <div className="w-full grid grid-cols-2 gap-3 pt-4 border-t border-white/10">
-          <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
-            <span className="text-xs text-white/60 block">Top Category</span>
-            <span className="text-sm font-bold text-white mt-1">{data[0].name}</span>
-          </div>
-          <div className="text-center p-3 bg-white/5 rounded-lg border border-white/10">
-            <span className="text-xs text-white/60 block">Categories</span>
-            <span className="text-sm font-bold text-white mt-1">{data.length} total</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
@@ -387,8 +368,10 @@ const DonutChart = ({ data }) => {
 const App = () => {
   // UI State
   const [isLoading, setIsLoading] = useState(true);
+  // eslint-disable-next-line no-unused-vars
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [view, setView] = useState('dashboard'); // 'dashboard', 'history', 'add'
+  // eslint-disable-next-line no-unused-vars
   const [isDarkMode, setIsDarkMode] = useState(() => {
     const saved = localStorage.getItem('fintrack-theme');
     return saved ? JSON.parse(saved) : true; // Default to dark mode
@@ -404,6 +387,7 @@ const App = () => {
   const [successMessage, setSuccessMessage] = useState(null);
   
   // Update State
+  // eslint-disable-next-line no-unused-vars
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [showUpdateNotification, setShowUpdateNotification] = useState(false);
   
@@ -429,11 +413,58 @@ const App = () => {
     description: '',
     date: new Date().toISOString().split('T')[0]
   });
+
+  // Accounts State
+  const [accounts, setAccounts] = useState(() => {
+    const saved = localStorage.getItem('fintrack-accounts');
+    return saved ? JSON.parse(saved) : [{ id: 'default', name: 'Personal' }];
+  });
+  const [activeAccountId, setActiveAccountId] = useState(() => {
+    return localStorage.getItem('fintrack-active-account') || 'default';
+  });
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [newAccountName, setNewAccountName] = useState('');
   
   // Save theme preference
   useEffect(() => {
     localStorage.setItem('fintrack-theme', JSON.stringify(isDarkMode));
   }, [isDarkMode]);
+
+  // Save accounts preference
+  useEffect(() => {
+    localStorage.setItem('fintrack-accounts', JSON.stringify(accounts));
+  }, [accounts]);
+
+  // Save active account preference
+  useEffect(() => {
+    localStorage.setItem('fintrack-active-account', activeAccountId);
+  }, [activeAccountId]);
+
+  // Account Management
+  const handleAddAccount = () => {
+    if (newAccountName.trim()) {
+      const newAcc = { 
+        id: `acc_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`, 
+        name: newAccountName.trim() 
+      };
+      setAccounts([...accounts, newAcc]);
+      setNewAccountName('');
+      setActiveAccountId(newAcc.id);
+    }
+  };
+
+  const handleDeleteAccount = (id) => {
+    if (accounts.length > 1) {
+      if (!window.confirm('Are you sure you want to delete this account?')) return;
+      const updated = accounts.filter(a => a.id !== id);
+      setAccounts(updated);
+      if (activeAccountId === id) {
+        setActiveAccountId(updated[0].id);
+      }
+    } else {
+      alert("You must have at least one account.");
+    }
+  };
   
   // Save categories preference
   useEffect(() => {
@@ -544,6 +575,7 @@ const App = () => {
     
     const initAuth = async () => {
         try {
+            // eslint-disable-next-line no-undef
             const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
             if (token) {
                 // Sign in using the custom token provided by the Canvas environment
@@ -652,18 +684,20 @@ const App = () => {
     return () => unsub();
   }, [user, useLocalFallback]); // Re-run when user object or fallback flag changes
 
-  // Filter expenses based on selected time period
+  // Filter expenses based on selected time period and active account
   const filteredExpenses = useMemo(() => {
+    const accountExpenses = expenses.filter(e => e.accountId === activeAccountId || (!e.accountId && activeAccountId === 'default'));
+
     const now = new Date();
     let startDate = new Date();
     const filter = activeFilter || { type: timeFilter };
     
-    if (filter.type === 'all') return expenses;
+    if (filter.type === 'all') return accountExpenses;
     
     if (filter.type === 'custom' && customStart && customEnd) {
       startDate = new Date(customStart);
       const endDate = new Date(customEnd);
-      return expenses.filter(expense => {
+      return accountExpenses.filter(expense => {
         const expenseDate = new Date(expense.date);
         return expenseDate >= startDate && expenseDate <= endDate;
       });
@@ -672,8 +706,8 @@ const App = () => {
       startDate.setDate(now.getDate() - days);
     }
     
-    return expenses.filter(expense => new Date(expense.date) >= startDate);
-  }, [expenses, activeFilter, timeFilter, customStart, customEnd]);
+    return accountExpenses.filter(expense => new Date(expense.date) >= startDate);
+  }, [expenses, activeFilter, timeFilter, customStart, customEnd, activeAccountId]);
 
   // Calculate category data for charts
   const categoryData = useMemo(() => {
@@ -757,7 +791,8 @@ const App = () => {
           category: formData.category,
           type: formData.type || 'expense',
           description: formData.description,
-          date: formData.date
+          date: formData.date,
+          accountId: activeAccountId
         };
         const updated = [newItem, ...current];
         localStorage.setItem(key, JSON.stringify(updated));
@@ -778,6 +813,7 @@ const App = () => {
         ...formData,
         amount: amountFloat,
         type: formData.type || 'expense',
+        accountId: activeAccountId,
         createdAt: serverTimestamp() // Adds Firestore timestamp for internal sorting/tracking
       });
       // Reset form and switch view
@@ -993,6 +1029,57 @@ const App = () => {
 
   return (
     <>
+      {/* Account Management Modal */}
+      {showAccountModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-slate-800 rounded-2xl w-full max-w-md border border-white/10 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2"><Book size={18} className="text-cyan-400"/> Manage Dashboards</h3>
+              <button onClick={() => setShowAccountModal(false)} className="text-white/50 hover:text-white transition-colors p-1"><X size={20}/></button>
+            </div>
+            
+            <div className="p-4 overflow-y-auto flex-1 space-y-4">
+              <div className="flex gap-2">
+                <input 
+                  type="text" 
+                  placeholder="New Dashboard Name..."
+                  value={newAccountName}
+                  onChange={e => setNewAccountName(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-white/5 border border-white/20 rounded-lg text-white text-sm focus:outline-none focus:border-cyan-400"
+                />
+                <button 
+                  onClick={handleAddAccount}
+                  disabled={!newAccountName.trim()}
+                  className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-lg font-medium text-sm transition-colors flex items-center gap-1"
+                >
+                  <Plus size={16}/> Add
+                </button>
+              </div>
+
+              <div className="space-y-2 mt-4">
+                <label className="text-xs font-semibold text-white/50 uppercase tracking-wider">Your Dashboards</label>
+                {accounts.map(acc => (
+                  <div key={acc.id} className="flex justify-between items-center p-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all">
+                    <span className="font-medium text-white flex items-center gap-2">
+                       {acc.name}
+                       {activeAccountId === acc.id && <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-500/20 text-cyan-400 border border-cyan-500/30">ACTIVE</span>}
+                    </span>
+                    <button 
+                      onClick={() => handleDeleteAccount(acc.id)}
+                      disabled={accounts.length <= 1}
+                      className="text-white/40 hover:text-red-400 transition-colors p-1 disabled:opacity-30 disabled:cursor-not-allowed"
+                      title="Delete dashboard"
+                    >
+                      <Trash2 size={16}/>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Update Notification */}
       {showUpdateNotification && (
         <UpdateNotification 
@@ -1012,6 +1099,42 @@ const App = () => {
           <span className="text-base lg:text-lg">FinTrack</span>
         </div>
         
+        <div className="px-3 lg:px-4 mt-4">
+          <label className={`text-xs font-semibold uppercase tracking-wider mb-2 block ${isDarkMode ? 'text-white/50' : 'text-white/70'}`}>Active Dashboard</label>
+          <div className="relative group">
+            <button className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl border transition-all ${isDarkMode ? 'bg-white/10 border-white/20 hover:bg-white/20 text-white' : 'bg-white/20 border-white/30 hover:bg-white/30 text-white'}`}>
+              <div className="flex items-center gap-2 truncate">
+                <Book size={16} className="text-cyan-300" />
+                <span className="font-semibold text-sm truncate">
+                  {accounts.find(a => a.id === activeAccountId)?.name || 'Personal'}
+                </span>
+              </div>
+              <ChevronDown size={16} className="text-white/50" />
+            </button>
+            <div className="absolute left-0 top-full mt-2 w-full invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all z-50">
+              <div className="bg-slate-800 rounded-xl shadow-xl border border-white/10 overflow-hidden py-1">
+                {accounts.map(acc => (
+                  <button
+                    key={acc.id}
+                    onClick={() => setActiveAccountId(acc.id)}
+                    className={`w-full text-left px-4 py-2 text-sm text-white hover:bg-white/10 transition-colors flex items-center justify-between ${activeAccountId === acc.id ? 'bg-white/5 font-semibold' : ''}`}
+                  >
+                    <span className="truncate">{acc.name}</span>
+                    {activeAccountId === acc.id && <span className="text-cyan-400">✓</span>}
+                  </button>
+                ))}
+                <div className="border-t border-white/10 my-1"></div>
+                <button 
+                  onClick={() => setShowAccountModal(true)}
+                  className="w-full text-left px-4 py-2 text-sm text-cyan-400 hover:bg-white/10 transition-colors flex items-center gap-2"
+                >
+                  <Plus size={14} /> Manage Dashboards
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <nav className="flex-1 px-3 lg:px-4 space-y-1 lg:space-y-2 mt-4 lg:mt-6">
           <button onClick={() => setView('dashboard')} className={`w-full flex items-center gap-3 px-3 lg:px-4 py-2.5 lg:py-3.5 rounded-xl transition-all font-medium text-sm lg:text-base min-h-touch ${view === 'dashboard' ? `${isDarkMode ? 'bg-white/25 border-white/40' : 'bg-white/40 border-white/60'} text-white backdrop-blur-sm border shadow-lg` : `text-white/90 hover:bg-white/10 hover:text-white`}`}>
 
@@ -1360,7 +1483,7 @@ const App = () => {
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 {/* Category & Settings Button - ONLY show for EXPENSE */}
                                 {formData.type === 'expense' && (
                                   <div>
@@ -1702,7 +1825,6 @@ const App = () => {
         </button>
       </nav>
     </div>
-      </div>
     </>
   );
 };

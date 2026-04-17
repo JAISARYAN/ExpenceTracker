@@ -1,3 +1,4 @@
+/* eslint-env node */
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   // Ensure Tailwind knows which files to scan for classes
