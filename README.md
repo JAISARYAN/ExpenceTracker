@@ -43,7 +43,6 @@ npm install
 Built by **Aryan Jaiswal** — software engineer and maker. Connect:
 
 - GitHub: https://github.com/JAISARYAN
-- LinkedIn: https://www.linkedin.com/in/aryan-jaiswal
 
 4. Start development server
 ```bash
