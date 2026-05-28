@@ -424,6 +424,8 @@ const App = () => {
   });
   const [showAccountModal, setShowAccountModal] = useState(false);
   const [newAccountName, setNewAccountName] = useState('');
+  const [showMobileFilterDropdown, setShowMobileFilterDropdown] = useState(false);
+  const [showMobileDashboardDropdown, setShowMobileDashboardDropdown] = useState(false);
   
   // Save theme preference
   useEffect(() => {
@@ -1227,32 +1229,35 @@ const App = () => {
 
         <div className="p-4 md:p-8 max-w-6xl mx-auto space-y-6 w-full overflow-x-hidden">
 
-            {useLocalFallback && (
-              <div className="mb-4 p-3 sm:p-4 rounded-lg bg-yellow-500/20 text-yellow-100 text-center border border-yellow-400 text-xs sm:text-sm">
-                ⚠️ Running in Local Mode — Firebase not configured. Data will be stored locally only.
-              </div>
-            )}
-
             {/* --- DASHBOARD VIEW --- */}
             {view === 'dashboard' && (
                 <>
-                    {/* Filter Controls Card */}
-                    <Card className="bg-gradient-to-r from-white/5 to-white/[0.02] mb-6">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div className="flex-1">
-                                <p className="text-white/70 text-sm font-medium mb-3">Filter Your Transactions</p>
-                                <div className="flex flex-col sm:flex-row gap-3 w-full">
+                    {/* PROMINENT FILTER SECTION AT TOP */}
+                    <div className="mb-8 -mx-4 md:mx-0 px-4 md:px-0">
+                        <Card className="bg-gradient-to-r from-cyan-600/20 to-blue-600/20 border-2 border-cyan-400/50 mb-0">
+                            <div className="space-y-4">
+                                <h2 className="text-white text-lg md:text-xl font-bold flex items-center gap-2">
+                                    <Filter size={24} className="text-cyan-300"/>
+                                    Filter Your Transactions
+                                </h2>
+                                
+                                {/* Filter Options - Horizontal on Desktop, Vertical on Mobile */}
+                                <div className="flex flex-col sm:flex-row gap-2 md:gap-3 w-full">
                                     {/* Dropdown Menu */}
-                                    <div className="group relative">
-                                        {/* Filter Button */}
-                                        <button className="flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-cyan-500/80 to-blue-500/80 hover:from-cyan-500 hover:to-blue-500 text-white text-sm font-semibold rounded-lg border border-cyan-400/50 hover:border-cyan-400 transition-all shadow-lg hover:shadow-xl active:scale-95">
-                                            <span>🔍</span>
-                                            Filter By Time
+                                    <div className="relative flex-1 md:flex-none">
+                                        {/* Filter Button - Much Larger on Mobile */}
+                                        <button 
+                                            onClick={() => setShowMobileFilterDropdown(!showMobileFilterDropdown)} 
+                                            className="w-full md:w-auto flex items-center justify-center md:justify-start gap-2 px-4 md:px-5 py-3 md:py-2.5 bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white text-base md:text-sm font-bold rounded-lg border-2 border-cyan-300 hover:border-cyan-200 transition-all shadow-lg hover:shadow-xl active:scale-95 min-h-touch"
+                                        >
+                                            <span className="text-xl md:text-base">🔍</span>
+                                            <span>Filter By Time</span>
+                                            <ChevronDown size={20} className={`ml-auto md:ml-1 transition-transform ${showMobileFilterDropdown ? 'rotate-180' : ''}`} />
                                         </button>
 
-                                        {/* Dropdown Menu */}
-                                        <div className="absolute left-0 top-full mt-2 w-56 max-w-[calc(100vw-2rem)] opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                                            <div className="bg-gradient-to-b from-white/15 to-white/10 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl overflow-hidden">
+                                        {/* Dropdown Menu - Fixed positioning to avoid off-screen */}
+                                        <div className={`absolute left-0 right-0 md:left-0 md:right-auto top-[calc(100%+8px)] transform transition-all duration-200 z-50 ${showMobileFilterDropdown ? 'opacity-100 visible scale-100' : 'opacity-0 invisible scale-95'}`} style={{minWidth: '320px'}}>
+                                            <div className="bg-gradient-to-b from-white/20 to-white/10 backdrop-blur-xl border-2 border-cyan-400/50 rounded-xl shadow-2xl overflow-hidden">
                                                 {/* Menu Items */}
                                                 <div className="py-2">
                                                     {[
@@ -1267,42 +1272,43 @@ const App = () => {
                                                             onClick={() => {
                                                                 setTimeFilter(option.id);
                                                                 if (option.id !== 'custom') setActiveFilter({ type: option.id });
+                                                                setShowMobileFilterDropdown(false);
                                                             }}
-                                                            className={`w-full px-4 py-3 text-left text-sm font-medium transition-all flex items-center gap-3 ${
+                                                            className={`w-full px-4 py-3 text-left text-base font-medium transition-all flex items-center gap-3 ${
                                                                 timeFilter === option.id
-                                                                    ? 'bg-cyan-600/60 text-white border-l-2 border-cyan-400'
-                                                                    : 'text-white/80 hover:text-white hover:bg-white/10'
+                                                                    ? 'bg-cyan-600/80 text-white border-l-4 border-cyan-300'
+                                                                    : 'text-white/90 hover:text-white hover:bg-white/15'
                                                             }`}
                                                         >
-                                                            <span className="text-base">{option.icon}</span>
+                                                            <span className="text-xl">{option.icon}</span>
                                                             {option.label}
-                                                            {timeFilter === option.id && <span className="ml-auto">✓</span>}
+                                                            {timeFilter === option.id && <span className="ml-auto text-lg font-bold">✓</span>}
                                                         </button>
                                                     ))}
                                                 </div>
 
                                                 {/* Custom Range Section - Expandable */}
                                                 {timeFilter === 'custom' && (
-                                                    <div className="border-t border-white/20 bg-white/5 p-4 space-y-3">
+                                                    <div className="border-t-2 border-white/20 bg-white/5 p-4 space-y-3">
                                                         <div className="space-y-2">
-                                                            <label className="text-xs text-white/70 font-semibold block">From Date</label>
+                                                            <label className="text-sm text-white/80 font-bold block">From Date</label>
                                                             <input 
                                                                 type="date" 
                                                                 value={customStart} 
                                                                 onChange={e => setCustomStart(e.target.value)} 
-                                                                className="w-full bg-white/10 border border-white/20 px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition-all"
+                                                                className="w-full bg-white/10 border-2 border-white/30 px-3 py-2 rounded-lg text-base text-white focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition-all font-medium"
                                                             />
                                                         </div>
                                                         <div className="space-y-2">
-                                                            <label className="text-xs text-white/70 font-semibold block">To Date</label>
+                                                            <label className="text-sm text-white/80 font-bold block">To Date</label>
                                                             <input 
                                                                 type="date" 
                                                                 value={customEnd} 
                                                                 onChange={e => setCustomEnd(e.target.value)} 
-                                                                className="w-full bg-white/10 border border-white/20 px-3 py-2 rounded-lg text-sm text-white focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition-all"
+                                                                className="w-full bg-white/10 border-2 border-white/30 px-3 py-2 rounded-lg text-base text-white focus:outline-none focus:border-cyan-400 focus:bg-white/15 transition-all font-medium"
                                                             />
                                                         </div>
-                                                        <div className="flex gap-2 pt-2">
+                                                        <div className="flex gap-2 pt-3">
                                                             <button 
                                                                 onClick={() => {
                                                                     if (customStart && customEnd) {
@@ -1312,7 +1318,7 @@ const App = () => {
                                                                         alert('Select both start and end dates');
                                                                     }
                                                                 }} 
-                                                                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-cyan-600 hover:bg-cyan-700 text-white transition-all"
+                                                                className="flex-1 px-3 py-2 rounded-lg text-sm font-bold bg-cyan-600 hover:bg-cyan-700 text-white transition-all"
                                                             >
                                                                 Apply
                                                             </button>
@@ -1323,7 +1329,7 @@ const App = () => {
                                                                     setTimeFilter('30'); 
                                                                     setActiveFilter({ type: '30' }); 
                                                                 }} 
-                                                                className="flex-1 px-3 py-2 rounded-lg text-xs font-semibold bg-white/10 hover:bg-white/20 text-white transition-all"
+                                                                className="flex-1 px-3 py-2 rounded-lg text-sm font-bold bg-white/20 hover:bg-white/30 text-white transition-all"
                                                             >
                                                                 Clear
                                                             </button>
@@ -1334,38 +1340,38 @@ const App = () => {
                                         </div>
                                     </div>
 
-                                    {/* Active Filter Badge */}
-                                    <div className="flex items-center gap-2 px-3 py-2 bg-white/10 backdrop-blur-sm rounded-lg border border-white/20 hover:bg-white/15 transition-all">
-                                        <span className="text-xs text-white/70 font-medium">Active:</span>
-                                        <span className="px-3 py-1 text-xs font-semibold bg-gradient-to-r from-emerald-600/60 to-cyan-600/60 rounded-full text-white border border-emerald-400/30">
-                                            {activeFilter.type === 'all' ? '🌍 All Time' : activeFilter.type === 'custom' ? `📆 ${activeFilter.start?.slice(5) || '-'} → ${activeFilter.end?.slice(5) || '-'}` : activeFilter.type === '1' ? '📅 Today' : `📊 Last ${activeFilter.type} Days`}
+                                    {/* Active Filter Badge - Larger on Mobile */}
+                                    <div className="flex items-center gap-2 px-3 md:px-2 py-3 md:py-2 bg-gradient-to-r from-emerald-600/40 to-cyan-600/40 backdrop-blur-sm rounded-lg border-2 border-emerald-400/50 hover:bg-gradient-to-r hover:from-emerald-600/60 hover:to-cyan-600/60 transition-all w-full md:w-auto">
+                                        <span className="text-sm md:text-xs text-white/90 font-bold">Active:</span>
+                                        <span className="px-3 py-1 text-sm md:text-xs font-bold bg-cyan-600/70 rounded-full text-white border-2 border-cyan-300/50 whitespace-nowrap">
+                                            {activeFilter.type === 'all' ? '🌍 All' : activeFilter.type === 'custom' ? `📆 ${activeFilter.start?.slice(5) || '-'} → ${activeFilter.end?.slice(5) || '-'}` : activeFilter.type === '1' ? '📅 Today' : `📊 ${activeFilter.type}d`}
                                         </span>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    </Card>
+                        </Card>
+                    </div>
 
                     {/* Top Stats Cards */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 w-full">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 lg:gap-6 w-full -mx-4 md:mx-0 px-4 md:px-0">
                          <Card className="bg-gradient-to-br from-cyan-500 via-blue-500 to-cyan-600 text-white border-none relative overflow-hidden shadow-lg shadow-cyan-500/30">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={80} className="sm:w-120 sm:h-120" /></div>
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><TrendingUp size={100} className="md:w-120 md:h-120" /></div>
                             <div className="relative z-10">
-                                <p className="text-cyan-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><Filter size={14}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter}d`}</p>
-                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
-                                <p className="text-cyan-100 text-xs sm:text-sm mt-4 flex items-center gap-1">
-                                    <ArrowUpRight size={16}/> {filteredExpenses.length} txns
+                                <p className="text-cyan-100 font-bold mb-2 flex items-center gap-2 text-sm md:text-xs"><Filter size={16}/> {timeFilter === 'all' ? 'Lifetime' : `Last ${timeFilter}d`}</p>
+                                <h2 className="text-3xl sm:text-4xl md:text-3xl lg:text-4xl font-bold tracking-tight">₹{balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</h2>
+                                <p className="text-cyan-100 text-sm md:text-xs mt-4 flex items-center gap-1">
+                                    <ArrowUpRight size={18}/> {filteredExpenses.length} txns
                                 </p>
                             </div>
                          </Card>
 
                         {/* Income Card */}
                         <Card className="bg-gradient-to-br from-emerald-500 to-green-600 text-white border-none shadow-lg shadow-emerald-500/30">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><Wallet size={80} className="sm:w-120 sm:h-120" /></div>
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><Wallet size={100} className="md:w-120 md:h-120" /></div>
                             <div className="relative z-10">
-                                <p className="text-emerald-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><Wallet size={14}/> Income</p>
-                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">+₹{totalIncome.toLocaleString()}</h2>
-                                <p className="text-emerald-100 text-xs sm:text-sm mt-4">
+                                <p className="text-emerald-100 font-bold mb-2 flex items-center gap-2 text-sm md:text-xs"><Wallet size={16}/> Income</p>
+                                <h2 className="text-3xl sm:text-4xl md:text-3xl lg:text-4xl font-bold tracking-tight">+₹{totalIncome.toLocaleString()}</h2>
+                                <p className="text-emerald-100 text-sm md:text-xs mt-4">
                                     Total earnings
                                 </p>
                             </div>
@@ -1373,11 +1379,11 @@ const App = () => {
 
                         {/* Expense Card */}
                         <Card className="bg-gradient-to-br from-red-500 to-rose-600 text-white border-none shadow-lg shadow-red-500/30">
-                            <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign size={80} className="sm:w-120 sm:h-120" /></div>
+                            <div className="absolute top-0 right-0 p-4 opacity-10"><DollarSign size={100} className="md:w-120 md:h-120" /></div>
                             <div className="relative z-10">
-                                <p className="text-red-100 font-medium mb-1 flex items-center gap-2 text-xs sm:text-sm"><DollarSign size={14}/> Expenses</p>
-                                <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold tracking-tight">-₹{totalExpense.toLocaleString()}</h2>
-                                <p className="text-red-100 text-xs sm:text-sm mt-4">
+                                <p className="text-red-100 font-bold mb-2 flex items-center gap-2 text-sm md:text-xs"><DollarSign size={16}/> Expenses</p>
+                                <h2 className="text-3xl sm:text-4xl md:text-3xl lg:text-4xl font-bold tracking-tight">-₹{totalExpense.toLocaleString()}</h2>
+                                <p className="text-red-100 text-sm md:text-xs mt-4">
                                     Total spending
                                 </p>
                             </div>
@@ -1385,12 +1391,12 @@ const App = () => {
                     </div>
 
                     {/* Trend Chart Card */}
-                    <Card className="md:col-span-2 flex flex-col justify-between">
-                        <div className="flex justify-between items-center mb-2">
-                            <h3 className="font-bold text-white flex items-center gap-2"><TrendingUp size={18} className="text-cyan-300"/> Spending Trend</h3>
+                    <Card className="md:col-span-2 flex flex-col justify-between -mx-4 md:mx-0 px-4 md:px-0">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="font-bold text-white text-lg md:text-base flex items-center gap-2"><TrendingUp size={20} className="text-cyan-300"/> Spending Trend</h3>
                         </div>
                         {timeFilter === 'all' ? (
-                            <div className="h-48 flex items-center justify-center text-white/60 bg-white/5 rounded-xl border border-dashed border-white/20">
+                            <div className="h-56 md:h-48 flex items-center justify-center text-white/60 bg-white/5 rounded-xl border border-dashed border-white/20 text-center px-4">
                                 Select '7 Days' or '30 Days' to see daily trends
                             </div>
                         ) : (
@@ -1398,43 +1404,43 @@ const App = () => {
                         )}
                     </Card>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6 w-full -mx-4 md:mx-0 px-4 md:px-0">
                         {/* Categories */}
-                        <Card>
-                            <h3 className="font-bold text-white mb-6 flex items-center gap-2"><PieChart size={18} className="text-cyan-300"/> Category Breakdown</h3>
+                        <Card className="-mx-4 md:mx-0 px-4 md:px-0">
+                            <h3 className="font-bold text-white mb-6 flex items-center gap-2 text-lg md:text-base"><PieChart size={20} className="text-cyan-300"/> Category Breakdown</h3>
                             <DonutChart data={categoryData} />
                         </Card>
 
                         {/* Recent Transactions */}
-                        <Card className="lg:col-span-2">
+                        <Card className="lg:col-span-2 -mx-4 md:mx-0 px-4 md:px-0">
                             <div className="flex justify-between items-center mb-6">
-                                <h3 className="font-bold text-white flex items-center gap-2"><History size={18} className="text-cyan-300"/> Recent Activity</h3>
-                                <button onClick={() => setView('history')} className="text-cyan-300 text-sm font-medium hover:text-cyan-200">View All →</button>
+                                <h3 className="font-bold text-white flex items-center gap-2 text-lg md:text-base"><History size={20} className="text-cyan-300"/> Recent Activity</h3>
+                                <button onClick={() => setView('history')} className="text-cyan-300 text-sm md:text-xs font-bold hover:text-cyan-200 transition-colors">View All →</button>
                             </div>
                             <div className="space-y-3">
                                 {filteredExpenses.slice(0, 5).map(item => {
                                   const categoryInfo = getCategoryIcon(item.category);
                                   const IconComponent = categoryInfo.icon;
                                   return (
-                                    <div key={item.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/20">
+                                    <div key={item.id} className="flex items-center justify-between p-3 md:p-2 rounded-xl hover:bg-white/5 transition-all border border-transparent hover:border-white/20">
                                         <div className="flex items-center gap-3 min-w-0 flex-1">
-                                            <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${categoryInfo.color} flex items-center justify-center text-white font-bold text-lg flex-shrink-0 shadow-lg`}>
-                                                <IconComponent size={22} />
+                                            <div className={`w-12 md:w-11 h-12 md:h-11 rounded-full bg-gradient-to-br ${categoryInfo.color} flex items-center justify-center text-white font-bold text-xl md:text-lg flex-shrink-0 shadow-lg`}>
+                                                <IconComponent size={24} />
                                             </div>
                                             <div className="min-w-0 flex-1">
-                                                <p className="font-semibold text-white text-sm truncate">{item.category}</p>
-                                                <p className="text-xs text-white/50">{formatDate(item.date)} {item.description && `• ${item.description.substring(0, 20)}`}</p>
+                                                <p className="font-bold text-white text-base md:text-sm truncate">{item.category}</p>
+                                                <p className="text-xs md:text-[11px] text-white/50">{formatDate(item.date)} {item.description && `• ${item.description.substring(0, 20)}`}</p>
                                             </div>
                                         </div>
                                         <div className="text-right flex-shrink-0 ml-2">
-                                    <p className={`font-bold text-sm sm:text-base ${item.type === 'income' ? 'text-emerald-300 flex items-center gap-1' : 'text-red-300 flex items-center gap-1'}`}>
+                                    <p className={`font-bold text-base md:text-sm ${item.type === 'income' ? 'text-emerald-300 flex items-center gap-1' : 'text-red-300 flex items-center gap-1'}`}>
                                       {item.type === 'income' ? (
                                         <>
-                                          <ArrowDownLeft size={14} /> +₹{item.amount.toFixed(0)}
+                                          <ArrowDownLeft size={16} /> +₹{item.amount.toFixed(0)}
                                         </>
                                       ) : (
                                         <>
-                                          <ArrowUpRight size={14} /> -₹{item.amount.toFixed(0)}
+                                          <ArrowUpRight size={16} /> -₹{item.amount.toFixed(0)}
                                         </>
                                       )}
                                     </p>
@@ -1451,19 +1457,19 @@ const App = () => {
 
             {/* --- ADD EXPENSE VIEW --- */}
             {view === 'add' && (
-                 <div className="max-w-xl mx-auto pt-4">
+                 <div className="max-w-xl mx-auto pt-4 -mx-4 md:mx-0 px-4 md:px-0">
                     <Card className={`border-t-4 border-t-cyan-500 ${isDarkMode ? 'bg-gradient-to-br from-slate-900 to-slate-800' : 'bg-gradient-to-br from-white to-gray-50'}`}>
-                        <form onSubmit={handleAdd} className="space-y-5">
+                        <form onSubmit={handleAdd} className="space-y-6">
                             <div>
-                                <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Amount</label>
+                                <label className={`block text-base md:text-sm font-bold mb-2 md:mb-1.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Amount</label>
                                 <div className="relative">
-                                    <span className={`absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-white/50' : 'text-gray-400'}`}>₹</span>
+                                    <span className={`absolute left-3 top-1/2 -translate-y-1/2 text-lg md:text-base ${isDarkMode ? 'text-white/50' : 'text-gray-400'}`}>₹</span>
                                     <input 
                                         type="number" step="0.01" required 
-                                        className={`w-full pl-8 pr-4 py-3 rounded-xl focus:ring-2 focus:ring-cyan-400 outline-none transition-all font-semibold text-lg ${
+                                        className={`w-full pl-8 pr-4 py-4 md:py-3 rounded-xl focus:ring-2 focus:ring-cyan-400 outline-none transition-all font-bold text-2xl md:text-lg ${
                                           isDarkMode
-                                            ? 'bg-white/10 border border-white/30 focus:bg-white/20 text-white placeholder-white/50'
-                                            : 'bg-gray-100 border border-gray-300 focus:bg-gray-50 text-gray-900 placeholder-gray-400'
+                                            ? 'bg-white/10 border-2 border-white/30 focus:bg-white/20 text-white placeholder-white/50'
+                                            : 'bg-gray-100 border-2 border-gray-300 focus:bg-gray-50 text-gray-900 placeholder-gray-400'
                                         }`}
                                         placeholder="0.00"
                                         value={formData.amount}
@@ -1472,25 +1478,25 @@ const App = () => {
                                 </div>
                             </div>
                             <div>
-                              <label className={`block text-sm font-medium mb-2.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Type</label>
-                              <div className={`inline-flex rounded-xl p-1 ${isDarkMode ? 'bg-white/6' : 'bg-gray-200'}`}>
-                                <button type="button" onClick={() => handleTypeSelect('expense')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.type === 'expense' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white' : isDarkMode ? 'text-white/80 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-300'}`}>
+                              <label className={`block text-base md:text-sm font-bold mb-3 md:mb-2.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Type</label>
+                              <div className={`inline-flex rounded-xl p-1 gap-1 w-full md:w-auto ${isDarkMode ? 'bg-white/6' : 'bg-gray-200'}`}>
+                                <button type="button" onClick={() => handleTypeSelect('expense')} className={`flex-1 md:flex-initial px-4 md:px-4 py-3 md:py-2 rounded-lg text-base md:text-sm font-bold transition ${formData.type === 'expense' ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white' : isDarkMode ? 'text-white/80 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-300'}`}>
                                   Expense
                                 </button>
-                                <button type="button" onClick={() => handleTypeSelect('income')} className={`px-4 py-2 rounded-lg text-sm font-medium transition ${formData.type === 'income' ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white' : isDarkMode ? 'text-white/80 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-300'}`}>
+                                <button type="button" onClick={() => handleTypeSelect('income')} className={`flex-1 md:flex-initial px-4 md:px-4 py-3 md:py-2 rounded-lg text-base md:text-sm font-bold transition ${formData.type === 'income' ? 'bg-gradient-to-r from-emerald-500 to-green-500 text-white' : isDarkMode ? 'text-white/80 hover:bg-white/5' : 'text-gray-700 hover:bg-gray-300'}`}>
                                   Income
                                 </button>
                               </div>
                             </div>
                             
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-4">
                                 {/* Category & Settings Button - ONLY show for EXPENSE */}
                                 {formData.type === 'expense' && (
                                   <div>
-                                    <label className={`block text-sm font-medium mb-1.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Category</label>
+                                    <label className={`block text-base md:text-sm font-bold mb-2 md:mb-1.5 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>Category</label>
                                     <div className="flex items-center gap-2">
                                       <select 
-                                        className={`flex-1 px-4 py-3 rounded-xl focus:ring-2 focus:ring-cyan-400 outline-none transition-all ${
+                                        className={`flex-1 px-4 py-3 md:py-3 rounded-xl focus:ring-2 focus:ring-cyan-400 outline-none transition-all text-base md:text-sm font-semibold border-2 ${
                                           isDarkMode
                                             ? 'bg-white/10 border border-white/30 text-white'
                                             : 'bg-gray-100 border border-gray-300 text-gray-900'
@@ -1563,22 +1569,22 @@ const App = () => {
 
             {/* --- HISTORY VIEW --- */}
             {view === 'history' && (
-                <Card className="overflow-hidden p-0">
-                    <div className="flex justify-end p-4 border-b border-white/10">
-                        <div className="flex space-x-2">
-                             <Button onClick={() => exportData('csv')} variant="ghost" icon={FileSpreadsheet} className="text-xs">Export CSV</Button>
-                             <Button onClick={exportPDF} variant="ghost" icon={FileJson} className="text-xs">Export PDF</Button>
+                <Card className="overflow-hidden p-0 -mx-4 md:mx-0 px-0 md:px-0">
+                    <div className="flex justify-end p-4 border-b border-white/10 gap-2 flex-wrap">
+                        <div className="flex space-x-2 flex-wrap">
+                             <Button onClick={() => exportData('csv')} variant="ghost" icon={FileSpreadsheet} className="text-xs md:text-xs">Export CSV</Button>
+                             <Button onClick={exportPDF} variant="ghost" icon={FileJson} className="text-xs md:text-xs">Export PDF</Button>
                         </div>
                     </div>
                     <div className="overflow-x-auto -mx-4 md:mx-0 px-4 md:px-0">
                       <table className="w-full text-left">
                         <thead className="bg-gradient-to-r from-white/5 to-white/[0.02] border-y border-white/10">
                           <tr>
-                            <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Date</th>
-                            <th className="min-w-[100px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Category</th>
-                            <th className="min-w-[200px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider">Description</th>
-                            <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-right">Amount</th>
-                            <th className="min-w-[80px] px-6 py-4 text-xs font-semibold text-white/80 uppercase tracking-wider text-center">Action</th>
+                            <th className="min-w-[100px] px-4 md:px-6 py-3 md:py-4 text-xs md:text-xs font-bold text-white/90 uppercase tracking-wider">Date</th>
+                            <th className="min-w-[100px] px-4 md:px-6 py-3 md:py-4 text-xs md:text-xs font-bold text-white/90 uppercase tracking-wider">Category</th>
+                            <th className="min-w-[200px] px-4 md:px-6 py-3 md:py-4 text-xs md:text-xs font-bold text-white/90 uppercase tracking-wider">Description</th>
+                            <th className="min-w-[80px] px-4 md:px-6 py-3 md:py-4 text-xs md:text-xs font-bold text-white/90 uppercase tracking-wider text-right">Amount</th>
+                            <th className="min-w-[80px] px-4 md:px-6 py-3 md:py-4 text-xs md:text-xs font-bold text-white/90 uppercase tracking-wider text-center">Action</th>
                           </tr>
                         </thead>
                             <tbody className="divide-y divide-white/10">
@@ -1587,36 +1593,36 @@ const App = () => {
                                   const IconComponent = categoryInfo.icon;
                                   return (
                                     <tr key={expense.id} className="hover:bg-white/5 transition-colors group">
-                                        <td className="px-3 sm:px-6 py-4 text-sm text-white whitespace-nowrap">{formatDate(expense.date)}</td>
-                                        <td className="px-3 sm:px-6 py-4">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-sm md:text-sm font-semibold text-white whitespace-nowrap">{formatDate(expense.date)}</td>
+                                        <td className="px-4 md:px-6 py-3 md:py-4">
                                           <div className="flex items-center gap-2">
-                                            <div className={`w-8 h-8 rounded-full bg-gradient-to-br ${categoryInfo.color} flex items-center justify-center text-white flex-shrink-0`}>
-                                              <IconComponent size={16} />
+                                            <div className={`w-9 h-9 rounded-full bg-gradient-to-br ${categoryInfo.color} flex items-center justify-center text-white flex-shrink-0`}>
+                                              <IconComponent size={18} />
                                             </div>
-                                            <span className="inline-flex items-center text-xs font-medium text-white truncate">
+                                            <span className="inline-flex items-center text-xs md:text-xs font-bold text-white truncate">
                                               {expense.category}
                                             </span>
                                           </div>
                                         </td>
-                                        <td className="px-3 sm:px-6 py-4 text-sm text-white/80 truncate max-w-xs">{expense.description || '—'}</td>
-                                        <td className="px-3 sm:px-6 py-4 text-sm font-bold text-right">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-sm md:text-sm text-white/80 truncate max-w-xs">{expense.description || '—'}</td>
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-sm md:text-sm font-bold text-right">
                                           {expense.type === 'income' ? (
                                             <span className="text-emerald-300 flex items-center justify-end gap-1">
-                                              <ArrowDownLeft size={14} /> +₹{expense.amount.toFixed(0)}
+                                              <ArrowDownLeft size={16} /> +₹{expense.amount.toFixed(0)}
                                             </span>
                                           ) : (
                                             <span className="text-red-300 flex items-center justify-end gap-1">
-                                              <ArrowUpRight size={14} /> -₹{expense.amount.toFixed(0)}
+                                              <ArrowUpRight size={16} /> -₹{expense.amount.toFixed(0)}
                                             </span>
                                           )}
                                         </td>
-                                        <td className="px-3 sm:px-6 py-4 text-center">
+                                        <td className="px-4 md:px-6 py-3 md:py-4 text-center">
                                           <button 
                                             onClick={() => handleDelete(expense.id)}
                                             className="p-2 text-white/70 hover:text-red-400 hover:bg-red-50/10 rounded-lg transition-all"
                                             title="Delete Transaction"
                                           >
-                                            <Trash2 size={16} />
+                                            <Trash2 size={18} />
                                           </button>
                                         </td>
                                     </tr>
@@ -1624,7 +1630,7 @@ const App = () => {
                                 })}
                                 {filteredExpenses.length === 0 && (
                                     <tr>
-                                        <td colSpan="5" className="px-6 py-10 text-center text-white/60">
+                                        <td colSpan="5" className="px-6 py-10 text-center text-white/60 text-sm md:text-sm">
                                             No transactions found for this period.
                                         </td>
                                     </tr>
@@ -1819,6 +1825,39 @@ const App = () => {
             </div>
             <span>Add</span>
         </button>
+        <div className="relative">
+          <button onClick={() => setShowMobileDashboardDropdown(!showMobileDashboardDropdown)} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${showMobileDashboardDropdown ? 'text-cyan-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
+              <Book size={20} />
+              <span>Board</span>
+          </button>
+          {showMobileDashboardDropdown && (
+            <div className="absolute bottom-full right-0 mb-2 w-48 bg-slate-800 rounded-xl shadow-xl border border-white/10 overflow-hidden py-1 z-50">
+              {accounts.map(acc => (
+                <button
+                  key={acc.id}
+                  onClick={() => {
+                    setActiveAccountId(acc.id);
+                    setShowMobileDashboardDropdown(false);
+                  }}
+                  className={`w-full text-left px-4 py-2 text-xs text-white hover:bg-white/10 transition-colors flex items-center justify-between ${activeAccountId === acc.id ? 'bg-white/5 font-semibold' : ''}`}
+                >
+                  <span className="truncate">{acc.name}</span>
+                  {activeAccountId === acc.id && <span className="text-cyan-400 text-sm">✓</span>}
+                </button>
+              ))}
+              <div className="border-t border-white/10 my-1"></div>
+              <button 
+                onClick={() => {
+                  setShowAccountModal(true);
+                  setShowMobileDashboardDropdown(false);
+                }}
+                className="w-full text-left px-4 py-2 text-xs text-cyan-400 hover:bg-white/10 transition-colors flex items-center gap-2"
+              >
+                <Plus size={12} /> Manage
+              </button>
+            </div>
+          )}
+        </div>
         <button onClick={() => setView('history')} className={`flex flex-col items-center justify-center gap-0.5 text-xs font-medium min-h-touch min-w-touch rounded-lg transition-colors ${view === 'history' ? 'text-cyan-400 bg-white/10' : 'text-white/70 hover:text-white hover:bg-white/5'}`}>
             <History size={20} />
             <span>History</span>
